@@ -11,6 +11,7 @@ import AVFoundation
 
 struct ContentView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
+    let synthesizer = AVSpeechSynthesizer() // speech synthesizer
 
     var body: some View {
         VStack(spacing: 20) {
@@ -26,6 +27,14 @@ struct ContentView: View {
                     recognizer.stopRecording()
                 }
             }
+
+            Button("Speak Arabic") {
+                speakArabic(text: recognizer.recognizedText)
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
         }
         .padding()
         .onAppear {
@@ -39,7 +48,16 @@ struct ContentView: View {
             }
         }
     }
+
+    // Function to speak Arabic text
+    func speakArabic(text: String) {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ar-SA")
+        utterance.rate = 0.5 // adjust speed (0.0 slow – 1.0 fast)
+        synthesizer.speak(utterance)
+    }
 }
+
 
 #Preview {
     ContentView()
