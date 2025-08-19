@@ -7,8 +7,6 @@
 
 import Foundation
 
-import Foundation
-
 extension String {
     /// Remove all Arabic diacritics (tashkeel)
     var removingTashkeel: String {
@@ -47,5 +45,39 @@ extension String {
             }
         }
         return nil
+    }
+
+    // Levenshtein distance
+    func levenshteinDistance(to target: String) -> Int {
+        let sourceArray = Array(self)
+        let targetArray = Array(target)
+        let (n, m) = (sourceArray.count, targetArray.count)
+        var dist = Array(repeating: Array(repeating: 0, count: m + 1), count: n + 1)
+
+        for i in 0...n { dist[i][0] = i }
+        for j in 0...m { dist[0][j] = j }
+
+        for i in 1...n {
+            for j in 1...m {
+                if sourceArray[i - 1] == targetArray[j - 1] {
+                    dist[i][j] = dist[i - 1][j - 1]
+                } else {
+                    dist[i][j] = Swift.min(
+                        dist[i - 1][j] + 1,
+                        dist[i][j - 1] + 1,
+                        dist[i - 1][j - 1] + 1
+                    )
+                }
+            }
+        }
+        return dist[n][m]
+    }
+
+    // Similarity ratio (0...1)
+    func similarity(to other: String) -> Double {
+        let maxLen = max(self.count, other.count)
+        if maxLen == 0 { return 1.0 }
+        let dist = self.levenshteinDistance(to: other)
+        return 1.0 - Double(dist) / Double(maxLen)
     }
 }
