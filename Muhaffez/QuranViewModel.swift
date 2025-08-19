@@ -11,7 +11,7 @@ import AVFoundation
 @MainActor
 class QuranViewModel: ObservableObject {
     @Published var recognizedText: String = ""
-    @Published var matchedText: String = ""
+    @Published var matchedText: [(String, Bool)] = []
     private let synthesizer = AVSpeechSynthesizer()
 
     // Load file into memory at app launch
@@ -38,20 +38,36 @@ class QuranViewModel: ObservableObject {
     func updateRecognizedText(_ newText: String) {
         recognizedText = newText
         matchedText = matchedWords(from: newText)
+        print("#quran matchedText: \(matchedText)")
     }
 
     // Map recognized words to closest Qur’an words
-    private func matchedWords(from recognized: String) -> String {
+    func matchedWords(from recognized: String) -> [(String, Bool)] {
         let quranWords = matchedAya.split(separator: " ").map { String($0) }
         let recognizedWords = recognized.split(separator: " ").map { String($0) }
 
-        var results: [String] = []
+        var results: [(String, Bool)] = []
 
-        for recWord in recognizedWords {
+        for (i, recWord) in recognizedWords.enumerated() {
             let normRec = recWord.normalizedArabic
             var bestMatch = recWord
             var bestScore = 0.0
 
+            // 1. Try position-based match if within range
+            if i < quranWords.count {
+                let qWord = quranWords[i]
+                let score = normRec.similarity(to: qWord.normalizedArabic)
+                if score >= 0.7 {
+                    results.append((qWord, true))
+                    continue
+                } else {
+                    // candidate but not confident
+                    bestScore = score
+                    bestMatch = qWord
+                }
+            }
+
+            // 2. Global fallback search among all quranWords
             for qWord in quranWords {
                 let score = normRec.similarity(to: qWord.normalizedArabic)
                 if score > bestScore {
@@ -60,12 +76,11 @@ class QuranViewModel: ObservableObject {
                 }
             }
 
-            if bestScore >= 0.7 { // threshold
-                results.append(bestMatch)
-            }
+            // always return something — mark true if above threshold, false otherwise
+            results.append((bestMatch, bestScore >= 0.7))
         }
 
-        return results.joined(separator: " ")
+        return results
     }
 
     func speakArabic(text: String) {

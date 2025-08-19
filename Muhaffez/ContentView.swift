@@ -13,9 +13,13 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text(viewModel.matchedText)
-                .padding()
-                .border(Color.gray)
+            ScrollView {
+                Text(AttributedString.coloredFromMatched(viewModel.matchedText))
+                    .padding()
+            }
+            .frame(height: 500) // adjust height as needed
+            .border(Color.gray)
+
             HStack {
                 Button("Start") {
                     try? recognizer.startRecording()
@@ -24,6 +28,7 @@ struct ContentView: View {
                     recognizer.stopRecording()
                 }
             }
+
             Button("Speak Arabic") {
                 viewModel.speakArabic(text: viewModel.recognizedText)
             }
@@ -33,7 +38,12 @@ struct ContentView: View {
             .cornerRadius(8)
         }
         .onChange(of: recognizer.recognizedText) { _, newValue in
+            print("#quran newValue: \(newValue)")
             viewModel.updateRecognizedText(newValue)
+        }
+        .onAppear {
+            // Use this for testing
+//            viewModel.matchedText = [("Verily", true), ("Allah", true), ("order", true), ("you", true), ("to", false), ("fullfill", true), ("the", false), ("deeds", true), ("of", false), ("your", false), ("parents", true), ("with", false), ("mercies", true), ("from", false), ("your", false), ("Lord", true), (".", false) ]
         }
     }
 }
