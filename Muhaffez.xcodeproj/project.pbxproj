@@ -27,6 +27,8 @@
 		F5B728742E53CDC600E7B4AC /* Muhaffez.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Muhaffez.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B7288B2E53CDC700E7B4AC /* MuhaffezUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5E1302D2E541CDB0020243D /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		F5E1302E2E541CEF0020243D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +77,8 @@
 		F5B7286B2E53CDC600E7B4AC = {
 			isa = PBXGroup;
 			children = (
+				F5E1302E2E541CEF0020243D /* README.md */,
+				F5E1302D2E541CDB0020243D /* LICENSE */,
 				F5B728762E53CDC600E7B4AC /* Muhaffez */,
 				F5B728842E53CDC700E7B4AC /* MuhaffezTests */,
 				F5B7288E2E53CDC700E7B4AC /* MuhaffezUITests */,

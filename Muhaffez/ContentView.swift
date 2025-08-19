@@ -11,6 +11,7 @@ import AVFoundation
 
 struct ContentView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
+    let quranLines: [String]
     let synthesizer = AVSpeechSynthesizer() // speech synthesizer
 
     var body: some View {
@@ -38,13 +39,18 @@ struct ContentView: View {
         }
         .padding()
         .onAppear {
-            SFSpeechRecognizer.requestAuthorization { status in
-                switch status {
-                case .authorized:
-                    print("Speech recognition authorized")
-                default:
-                    print("Speech recognition not authorized")
-                }
+            var searchText = "انه من سليمان"
+            if let found = searchText.findIn(lines: quranLines) {
+                print("Found line: \(found)")
+            } else {
+                print("Not found")
+            }
+
+            searchText = "ان الله يأمركم"
+            if let result = searchText.findLineStartingIn(lines: quranLines) {
+                print("✅ Found at line \(result.index): \(result.line)")
+            } else {
+                print("❌ Not found")
             }
         }
     }
@@ -60,5 +66,10 @@ struct ContentView: View {
 
 
 #Preview {
-    ContentView()
+    ContentView(quranLines: [
+        "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+        "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+        "الرَّحْمَٰنِ الرَّحِيمِ"
+    ])
 }
+

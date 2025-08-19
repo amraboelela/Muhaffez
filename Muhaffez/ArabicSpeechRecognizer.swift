@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  ArabicSpeechRecognizer.swift
 //  Muhaffez
 //
 //  Created by Amr Aboelela on 8/18/25.
