@@ -10,9 +10,14 @@ import AVFoundation
 
 @MainActor
 class QuranViewModel: ObservableObject {
-    @Published var recognizedText: String = ""
-    @Published var matchedText: [(String, Bool)] = []
+    var voiceText: String = "" {
+        didSet {
+            updateMatchedWords()
+        }
+    }
+    @Published var matchedWords: [(String, Bool)] = []
     private let synthesizer = AVSpeechSynthesizer()
+    let matchThreshold = 0.7
 
     // Load file into memory at app launch
     let quranLines: [String] = {
@@ -31,56 +36,53 @@ class QuranViewModel: ObservableObject {
             return []
         }
     }()
-    var matchedAya = """
+    var quranText = """
     إِنَّ اللَّهَ يَأمُرُكُم أَن تُؤَدُّوا الأَماناتِ إِلىٰ أَهلِها وَإِذا حَكَمتُم بَينَ النّاسِ أَن تَحكُموا بِالعَدلِ إِنَّ اللَّهَ نِعِمّا يَعِظُكُم بِهِ إِنَّ اللَّهَ كانَ
     """
 
-    func updateRecognizedText(_ newText: String) {
-        recognizedText = newText
-        matchedText = matchedWords(from: newText)
-        print("#quran matchedText: \(matchedText)")
-    }
-
-    // Map recognized words to closest Qur’an words
-    func matchedWords(from recognized: String) -> [(String, Bool)] {
-        let quranWords = matchedAya.split(separator: " ").map { String($0) }
-        let recognizedWords = recognized.split(separator: " ").map { String($0) }
+    // Map voice words to closest Qur’an words
+    func updateMatchedWords() {
+        let quranWords = quranText.split(separator: " ").map { String($0) }
+        let voiceWords = voiceText.split(separator: " ").map { String($0) }
 
         var results: [(String, Bool)] = []
 
-        for (i, recWord) in recognizedWords.enumerated() {
-            let normRec = recWord.normalizedArabic
-            var bestMatch = recWord
-            var bestScore = 0.0
-
-            // 1. Try position-based match if within range
-            if i < quranWords.count {
-                let qWord = quranWords[i]
-                let score = normRec.similarity(to: qWord.normalizedArabic)
-                if score >= 0.7 {
+        var quranWordsIndex = -1
+        for voiceWord in voiceWords {
+            quranWordsIndex += 1
+            guard quranWordsIndex < quranWords.count else {
+                break
+            }
+            let normVoiceWord = voiceWord.normalizedArabic
+            var qWord = quranWords[quranWordsIndex]
+            var normQWord = qWord.normalizedArabic
+            var score = normVoiceWord.similarity(to: normQWord)
+            results.append((qWord, score >= matchThreshold))
+            if score < matchThreshold && quranWordsIndex + 1 < quranWords.count {
+                // check the next word
+                qWord = quranWords[quranWordsIndex + 1]
+                normQWord = qWord.normalizedArabic
+                score = normVoiceWord.similarity(to: normQWord)
+                if score >= matchThreshold {
+                    quranWordsIndex += 1
                     results.append((qWord, true))
-                    continue
-                } else {
-                    // candidate but not confident
-                    bestScore = score
-                    bestMatch = qWord
+                } else if quranWordsIndex + 2 < quranWords.count {
+                    // check the next word
+                    qWord = quranWords[quranWordsIndex + 2]
+                    normQWord = qWord.normalizedArabic
+                    score = normVoiceWord.similarity(to: normQWord)
+                    if score >= matchThreshold {
+                        quranWordsIndex += 1
+                        results.append((quranWords[quranWordsIndex], false))
+                        quranWordsIndex += 1
+                        results.append((quranWords[quranWordsIndex], true))
+                    }
                 }
             }
-
-            // 2. Global fallback search among all quranWords
-            for qWord in quranWords {
-                let score = normRec.similarity(to: qWord.normalizedArabic)
-                if score > bestScore {
-                    bestScore = score
-                    bestMatch = qWord
-                }
-            }
-
-            // always return something — mark true if above threshold, false otherwise
-            results.append((bestMatch, bestScore >= 0.7))
         }
 
-        return results
+        matchedWords = results
+        print("#quran matchedWords: \(matchedWords)")
     }
 
     func speakArabic(text: String) {

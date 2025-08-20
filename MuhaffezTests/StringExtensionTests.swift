@@ -12,7 +12,7 @@ struct StringExtensionTests {
 
     @Test func testRemovingTashkeel() async throws {
         let text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
-        let expected = "بسم الله الرحمٰن الرحيم"
+        let expected = "بسم الله الرحمن الرحيم"
         print("text.removingTashkeel: \(text.removingTashkeel)")
         #expect(text.removingTashkeel == expected)
     }

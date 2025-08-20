@@ -8,98 +8,103 @@
 import Testing
 @testable import Muhaffez
 
+@MainActor
 struct QuranViewModelTests {
     // Example ayah for testing context
     let matchedAya = "إن الله يأمركم أن تؤدوا الأمانات إلى أهلها"
 
     @Test func testExactMatch() async throws {
-        let viewModel = await QuranViewModel()
-        await viewModel.updateRecognizedText("إِنَّ اللَّهَ يَأمُرُكُ")
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "ان الله يامركم ان تؤدوا الامانات الى اهلها"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        print("matchedTrues: \(matchedTrues)")
 
-        let matchedText = await viewModel.matchedText
-        print("matchedText: \(matchedText)")
-        await #expect(viewModel.recognizedText == "إِنَّ اللَّهَ يَأمُرُكُ")
-        #expect(matchedText.contains("إِنَّ"))
-        #expect(matchedText.contains("اللَّهَ"))
-        #expect(matchedText.contains("يَأمُرُكُم"))
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
+        #expect(matchedTrues.contains("إِلىٰ"))
     }
 
-    @Test func testFuzzyMatchHamzaVariants() async throws {
-        let viewModel = await QuranViewModel()
+    @Test func testFuzzyMatch() async throws {
+        let viewModel = QuranViewModel()
         // Missing tashkeel + hamza variant
-        await viewModel.updateRecognizedText("ان الله يامرك")
-        await #expect(viewModel.recognizedText == "ان الله يامرك")
-        var matchedText = await viewModel.matchedText
-        print("matchedText: \(matchedText)")
-        #expect(matchedText == "إِنَّ اللَّهَ يَأمُرُكُم")
-        #expect(matchedText.contains("إِنَّ"))
-        #expect(matchedText.contains("اللَّهَ"))
-        #expect(matchedText.contains("يَأمُرُكُم"))
+        viewModel.voiceText = "ان الله يامرك"
+        var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        print("matchedTrues: \(matchedTrues)")
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
 
-        await viewModel.updateRecognizedText("إن الله")
-        matchedText = await viewModel.matchedText
-        print("matchedText: \(matchedText)")
-        #expect(matchedText == "إِنَّ اللَّهَ")
-        #expect(matchedText.contains("إِنَّ"))
-        #expect(matchedText.contains("اللَّهَ"))
+        viewModel.voiceText = "إن الله"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
 
-        await viewModel.updateRecognizedText("إن")
-        matchedText = await viewModel.matchedText
-        print("matchedText: \(matchedText)")
-        #expect(matchedText == "إِنَّ")
-        #expect(matchedText.contains("إِنَّ"))
+        viewModel.voiceText = "إن"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
     }
 
     @Test func testPartialRecognition() async throws {
-        let viewModel = await QuranViewModel()
-        await viewModel.updateRecognizedText("الله يأمرك بالعدل")
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "الله يأمرك بالعدل"
 
-        let matchedText = await viewModel.matchedText
-        print("matchedText: \(matchedText)")
-        #expect(matchedText.contains("اللَّهَ"))
-        #expect(matchedText.contains("يَأمُرُكُم"))
-        #expect(matchedText.contains("بِالعَدلِ"))
+        var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
+        #expect(!matchedTrues.contains("بِالعَدلِ"))
+
+        viewModel.voiceText = "الله يأمرك تؤدوا"
+
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
+        #expect(matchedTrues.contains("تُؤَدُّوا"))
     }
 
     @Test func testNoMatch() async throws {
-        let viewModel = await QuranViewModel()
-        await viewModel.updateRecognizedText("hello world")
-
-        await #expect(viewModel.matchedText.isEmpty)
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "hello world"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.isEmpty)
     }
 
     @Test func testMatchedWordsExactMatch() async throws {
-        let viewModel = await QuranViewModel()
-        let recognized = "ان الله يامركم ان تؤدوا الامانات الى اهلها"
-        let result = await viewModel.matchedWords(from: recognized)
-        #expect(result == matchedAya)
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "ان الله يامركم ان تؤدوا الامانات الى اهلها"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.count == 8)
     }
 
     @Test func testMatchedWordsPartialMatch() async throws {
-        let viewModel = await QuranViewModel()
-        let recognized = "ان الله يامركم الامانة"
-        let result = await viewModel.matchedWords(from: recognized)
-        // Should at least contain the key words
-        #expect(result.contains("ان"))
-        #expect(result.contains("الله"))
-        #expect(result.contains("الامانات"))
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "ان الله يامركم الامانة"
+        var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("الأَماناتِ"))
+
+        viewModel.voiceText = "ان الله يامركم الى الامانة"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("الأَماناتِ"))
     }
 
     @Test func testMatchedWordsWithTypos() async throws {
-        let viewModel = await QuranViewModel()
-        let recognized = "ان الله يامركم ان تودو الامانات ال اهلها"
-        let result = await viewModel.matchedWords(from: recognized)
-        print("result: \(result)")
-        #expect(result.contains("تؤدوا"))   // typo fixed by similarity
-        #expect(result.contains("الأمانات"))
-        #expect(result.contains("إلى"))     // typo fixed by similarity
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "ان الله يامركم ان تودو الامانا إلى اهلها"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("تُؤَدُّوا"))
+        #expect(matchedTrues.contains("الأَماناتِ"))
+        #expect(matchedTrues.contains("إِلىٰ"))
     }
 
     @Test func testMatchedWordsBelowThreshold() async throws {
-        let viewModel = await QuranViewModel()
-        let recognized = "سلام عالم مختلف"
-        let result = await viewModel.matchedWords(from: recognized)
-        #expect(result.isEmpty)   // None should pass threshold 0.7
+        let viewModel = QuranViewModel()
+        viewModel.voiceText = "سلام عالم مختلف"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.isEmpty)
     }
 
 }

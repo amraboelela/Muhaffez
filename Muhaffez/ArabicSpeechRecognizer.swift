@@ -14,7 +14,7 @@ class ArabicSpeechRecognizer: NSObject, ObservableObject {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
 
-    @Published var recognizedText: String = ""
+    @Published var voiceText: String = ""
 
     func startRecording() throws {
         // Cancel previous task if running
@@ -35,7 +35,7 @@ class ArabicSpeechRecognizer: NSObject, ObservableObject {
         recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self = self else { return }
             if let result = result {
-                self.recognizedText = result.bestTranscription.formattedString
+                self.voiceText = result.bestTranscription.formattedString
             }
 
             if error != nil || (result?.isFinal ?? false) {

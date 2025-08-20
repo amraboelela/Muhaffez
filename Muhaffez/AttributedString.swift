@@ -15,7 +15,7 @@ extension AttributedString {
             var attributedWord = AttributedString(word)
 
             // Apply attributes directly and in a type-safe way
-            attributedWord.foregroundColor = isMatched ? .green : .red
+            attributedWord.foregroundColor = isMatched ? .darkGreen : .red
             attributedWord.font = .system(size: 18, weight: .regular)
 
             // Append the word to the result

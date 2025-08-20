@@ -10,7 +10,9 @@ import Foundation
 extension String {
     /// Remove all Arabic diacritics (tashkeel)
     var removingTashkeel: String {
-        self.applyingTransform(.stripDiacritics, reverse: false) ?? self
+        String(self.unicodeScalars.filter {
+            !CharacterSet.arabicDiacritics.contains($0)
+        })
     }
 
     var normalizedArabic: String {
