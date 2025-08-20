@@ -160,11 +160,14 @@ class QuranViewModel: ObservableObject {
         var results = matchedWords
         var quranWordsIndex = matchedWords.count
         if quranWordsIndex + 2 < quranWords.count {
+            var voiceToSpeak = quranWords[quranWordsIndex] + " "
             results.append((quranWords[quranWordsIndex], false))
             quranWordsIndex += 1
+            voiceToSpeak += quranWords[quranWordsIndex]
             results.append((quranWords[quranWordsIndex], false))
             matchedWords = results
             print("#quran matchedWords: \(matchedWords)")
+            speakArabic(text: voiceToSpeak)
         }
     }
 

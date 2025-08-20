@@ -15,6 +15,7 @@ struct ContentView: View {
         VStack(spacing: 20) {
             ScrollView {
                 Text(AttributedString.coloredFromMatched(viewModel.matchedWords))
+                    .environment(\.layoutDirection, .rightToLeft)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
