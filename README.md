@@ -1,5 +1,26 @@
 # Muhaffez
 
+📖 **Muhaffez** is a Quran memorization companion app designed to help you on your journey of learning, reviewing, and perfecting the words of Allah.  
+
+---
+
+## 🌟 Features
+
+- 🕌 **Memorization Aid**  
+  Listen, repeat, and test yourself on any Surah or Ayah.
+
+- 🔍 **Smart Matching**  
+  Your recitation is checked against the actual Qur’an text with support for **fuzzy matching** (e.g., hamza/tashkeel variants, common mistakes).
+
+- 🎙️ **Voice Recognition**  
+  Uses speech recognition to compare your voice to the Quran text word by word.
+
+- 🎨 **Color-Coded Feedback**  
+  Correctly recited words appear in **dark green**, while mistakes appear in **red**, making it easy to spot errors.
+
+- 📅 **Progress Tracking** *(coming soon)*  
+  Keep track of which Surahs you’ve memorized and where you need more review.
+
 ## Tanzil Quran Text (Simple Minimal, Version 1.1)
 Copyright (C) 2007-2025 Tanzil Project
 License: Creative Commons Attribution 3.0
