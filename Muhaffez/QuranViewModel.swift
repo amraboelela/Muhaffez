@@ -57,25 +57,74 @@ class QuranViewModel: ObservableObject {
             var qWord = quranWords[quranWordsIndex]
             var normQWord = qWord.normalizedArabic
             var score = normVoiceWord.similarity(to: normQWord)
-            results.append((qWord, score >= matchThreshold))
-            if score < matchThreshold && quranWordsIndex + 1 < quranWords.count {
-                // check the next word
-                qWord = quranWords[quranWordsIndex + 1]
-                normQWord = qWord.normalizedArabic
-                score = normVoiceWord.similarity(to: normQWord)
-                if score >= matchThreshold {
-                    quranWordsIndex += 1
-                    results.append((qWord, true))
-                } else if quranWordsIndex + 2 < quranWords.count {
-                    // check the next word
-                    qWord = quranWords[quranWordsIndex + 2]
+            if score >= matchThreshold {
+                results.append((qWord, true))
+            } else {
+                if quranWordsIndex - 1 >= 0 { // check backward
+                    qWord = quranWords[quranWordsIndex - 1]
                     normQWord = qWord.normalizedArabic
                     score = normVoiceWord.similarity(to: normQWord)
                     if score >= matchThreshold {
-                        quranWordsIndex += 1
+                        quranWordsIndex -= 1
+                        results.removeLast()
+                        results.append((qWord, true))
+                        continue
+                    } else if quranWordsIndex - 2 >= 0 {
+                        qWord = quranWords[quranWordsIndex - 2]
+                        normQWord = qWord.normalizedArabic
+                        score = normVoiceWord.similarity(to: normQWord)
+                        if score >= matchThreshold {
+                            quranWordsIndex -= 2
+                            results.removeLast(2)
+                            results.append((qWord, true))
+                            continue
+                        } else if quranWordsIndex - 3 >= 0 {
+                            qWord = quranWords[quranWordsIndex - 3]
+                            normQWord = qWord.normalizedArabic
+                            score = normVoiceWord.similarity(to: normQWord)
+                            if score >= matchThreshold {
+                                quranWordsIndex -= 3
+                                results.removeLast(3)
+                                results.append((qWord, true))
+                                continue
+                            }
+                        }
+                    }
+                }
+                if quranWordsIndex + 1 < quranWords.count { // check forward
+                    qWord = quranWords[quranWordsIndex + 1]
+                    normQWord = qWord.normalizedArabic
+                    score = normVoiceWord.similarity(to: normQWord)
+                    if score >= matchThreshold {
                         results.append((quranWords[quranWordsIndex], false))
                         quranWordsIndex += 1
                         results.append((quranWords[quranWordsIndex], true))
+                    } else if quranWordsIndex + 2 < quranWords.count {
+                        qWord = quranWords[quranWordsIndex + 2]
+                        normQWord = qWord.normalizedArabic
+                        score = normVoiceWord.similarity(to: normQWord)
+                        if score >= matchThreshold {
+                            results.append((quranWords[quranWordsIndex], false))
+                            quranWordsIndex += 1
+                            results.append((quranWords[quranWordsIndex], false))
+                            quranWordsIndex += 1
+                            results.append((quranWords[quranWordsIndex], true))
+                        } else if quranWordsIndex + 3 < quranWords.count {
+                            qWord = quranWords[quranWordsIndex + 3]
+                            normQWord = qWord.normalizedArabic
+                            score = normVoiceWord.similarity(to: normQWord)
+                            if score >= matchThreshold {
+                                results.append((quranWords[quranWordsIndex], false))
+                                quranWordsIndex += 1
+                                results.append((quranWords[quranWordsIndex], false))
+                                quranWordsIndex += 1
+                                results.append((quranWords[quranWordsIndex], false))
+                                quranWordsIndex += 1
+                                results.append((quranWords[quranWordsIndex], true))
+                            }
+                        } else {
+                            results.append((quranWords[quranWordsIndex], false))
+                        }
                     }
                 }
             }

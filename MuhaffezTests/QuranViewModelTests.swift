@@ -79,16 +79,42 @@ struct QuranViewModelTests {
     @Test func testMatchedWordsPartialMatch() async throws {
         let viewModel = QuranViewModel()
         viewModel.voiceText = "ان الله يامركم الامانة"
+        let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("الأَماناتِ"))
+    }
+
+    @Test func testForwardMatch() async throws {
+        let viewModel = QuranViewModel()
+
+        viewModel.voiceText = "ان الله يامركم الى الامانة"
         var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.contains("إِنَّ"))
         #expect(matchedTrues.contains("اللَّهَ"))
         #expect(matchedTrues.contains("الأَماناتِ"))
 
-        viewModel.voiceText = "ان الله يامركم الى الامانة"
+        viewModel.voiceText = "ان الله يامركم الى"
         matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.contains("إِنَّ"))
         #expect(matchedTrues.contains("اللَّهَ"))
-        #expect(matchedTrues.contains("الأَماناتِ"))
+        #expect(matchedTrues.contains("إِلىٰ"))
+    }
+
+    @Test func testBackwardMatch() async throws {
+        let viewModel = QuranViewModel()
+
+        viewModel.voiceText = "ان الله يامركم يامركم "
+        var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
+
+        viewModel.voiceText = "ان الله يامركم الله"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(matchedTrues.contains("إِنَّ"))
+        #expect(matchedTrues.contains("اللَّهَ"))
+        #expect(!matchedTrues.contains("يَأمُرُكُم"))
     }
 
     @Test func testMatchedWordsWithTypos() async throws {
@@ -106,5 +132,4 @@ struct QuranViewModelTests {
         let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.isEmpty)
     }
-
 }

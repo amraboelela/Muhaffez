@@ -1,6 +1,6 @@
 # Muhaffez
 
-📖 **Muhaffez** is a Quran memorization companion app designed to help you on your journey of learning, reviewing, and perfecting the words of Allah.  
+📖 **Muhaffez** is a Quran memorization companion iOS app designed to help you on your journey of learning, reviewing, and perfecting the words of Allah.  
 
 ---
 
