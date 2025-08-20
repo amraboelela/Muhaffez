@@ -10,11 +10,12 @@ import AVFoundation
 
 @MainActor
 class QuranViewModel: ObservableObject {
-    var voiceText: String = "" {
+    var voiceText = "" {
         didSet {
             quranWords = quranText.split(separator: " ").map { String($0) }
             voiceWords = voiceText.split(separator: " ").map { String($0) }
             if !voiceText.isEmpty {
+                updateQuranText()
                 updateMatchedWords()
             }
         }
@@ -42,15 +43,35 @@ class QuranViewModel: ObservableObject {
             return []
         }
     }()
-    var quranText = """
-    إِنَّ اللَّهَ يَأمُرُكُم أَن تُؤَدُّوا الأَماناتِ إِلىٰ أَهلِها وَإِذا حَكَمتُم بَينَ النّاسِ أَن تَحكُموا بِالعَدلِ إِنَّ اللَّهَ نِعِمّا يَعِظُكُم بِهِ إِنَّ اللَّهَ كانَ
-    """ {
+    var foundAyat = [Int]()
+    var quranText = "" {
         didSet {
             quranWords = quranText.split(separator: " ").map { String($0) }
         }
     }
     var quranWords = [String]()
     var voiceWords = [String]()
+
+    func updateQuranText() {
+        foundAyat.removeAll()
+        guard !voiceText.isEmpty else { return }
+        let normVoice = voiceText.normalizedArabic
+        for (index, line) in quranLines.enumerated() {
+            if line.normalizedArabic.hasPrefix(normVoice) {
+                foundAyat.append(index)
+            }
+        }
+        print("#quran foundAyat: \(foundAyat)")
+        if let firstIndex = foundAyat.first {
+            quranText = quranLines[firstIndex]
+            print("#quran quranText: \(quranText)")
+            if foundAyat.count == 1 {
+                let endIndex = min(firstIndex + 100, quranLines.count)
+                let extraLines = quranLines[(firstIndex + 1)..<endIndex]
+                quranText = ([quranText] + extraLines).joined(separator: " ")
+            }
+        }
+    }
 
     // Map voice words to closest Qur’an words
     func updateMatchedWords() {
