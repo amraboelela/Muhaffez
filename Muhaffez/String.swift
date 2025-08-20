@@ -15,9 +15,17 @@ extension String {
         })
     }
 
+    func removingControlCharacters() -> String {
+        self.replacingOccurrences(of: "\\p{Cf}", with: "", options: .regularExpression)
+
+//        self.unicodeScalars.filter { !$0.properties.isControl && $0 != "\u{200F}" }
+//            .map { String($0) }
+//            .joined()
+    }
+
     var normalizedArabic: String {
         // 1. Remove diacritics (tashkeel)
-        var text = self.removingTashkeel
+        var text = self.removingTashkeel.removingControlCharacters()
 
         // 2. Normalize hamza variants
         let hamzaMap: [Character: Character] = [

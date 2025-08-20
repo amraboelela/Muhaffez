@@ -12,11 +12,17 @@ import AVFoundation
 class QuranViewModel: ObservableObject {
     var voiceText: String = "" {
         didSet {
-            updateMatchedWords()
+            quranWords = quranText.split(separator: " ").map { String($0) }
+            voiceWords = voiceText.split(separator: " ").map { String($0) }
+            if !voiceText.isEmpty {
+                updateMatchedWords()
+            }
         }
     }
+    @Published var isRecording = false
     @Published var matchedWords: [(String, Bool)] = []
     private let synthesizer = AVSpeechSynthesizer()
+    private var peekTimer: Timer?
     let matchThreshold = 0.7
 
     // Load file into memory at app launch
@@ -38,12 +44,23 @@ class QuranViewModel: ObservableObject {
     }()
     var quranText = """
     إِنَّ اللَّهَ يَأمُرُكُم أَن تُؤَدُّوا الأَماناتِ إِلىٰ أَهلِها وَإِذا حَكَمتُم بَينَ النّاسِ أَن تَحكُموا بِالعَدلِ إِنَّ اللَّهَ نِعِمّا يَعِظُكُم بِهِ إِنَّ اللَّهَ كانَ
-    """
+    """ {
+        didSet {
+            quranWords = quranText.split(separator: " ").map { String($0) }
+        }
+    }
+    var quranWords = [String]()
+    var voiceWords = [String]()
 
     // Map voice words to closest Qur’an words
     func updateMatchedWords() {
-        let quranWords = quranText.split(separator: " ").map { String($0) }
-        let voiceWords = voiceText.split(separator: " ").map { String($0) }
+        peekTimer?.invalidate()
+        peekTimer = nil
+        peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.peekHelper()
+            }
+        }
 
         var results: [(String, Bool)] = []
 
@@ -99,6 +116,7 @@ class QuranViewModel: ObservableObject {
                         results.append((quranWords[quranWordsIndex], false))
                         quranWordsIndex += 1
                         results.append((quranWords[quranWordsIndex], true))
+                        continue
                     } else if quranWordsIndex + 2 < quranWords.count {
                         qWord = quranWords[quranWordsIndex + 2]
                         normQWord = qWord.normalizedArabic
@@ -109,6 +127,7 @@ class QuranViewModel: ObservableObject {
                             results.append((quranWords[quranWordsIndex], false))
                             quranWordsIndex += 1
                             results.append((quranWords[quranWordsIndex], true))
+                            continue
                         } else if quranWordsIndex + 3 < quranWords.count {
                             qWord = quranWords[quranWordsIndex + 3]
                             normQWord = qWord.normalizedArabic
@@ -121,17 +140,32 @@ class QuranViewModel: ObservableObject {
                                 results.append((quranWords[quranWordsIndex], false))
                                 quranWordsIndex += 1
                                 results.append((quranWords[quranWordsIndex], true))
+                                continue
                             }
-                        } else {
-                            results.append((quranWords[quranWordsIndex], false))
                         }
                     }
                 }
+                results.append((quranWords[quranWordsIndex], false))
             }
         }
-
         matchedWords = results
         print("#quran matchedWords: \(matchedWords)")
+    }
+
+    func peekHelper() {
+        print("#quran peekHelper")
+        guard isRecording else {
+            return
+        }
+        var results = matchedWords
+        var quranWordsIndex = matchedWords.count
+        if quranWordsIndex + 2 < quranWords.count {
+            results.append((quranWords[quranWordsIndex], false))
+            quranWordsIndex += 1
+            results.append((quranWords[quranWordsIndex], false))
+            matchedWords = results
+            print("#quran matchedWords: \(matchedWords)")
+        }
     }
 
     func speakArabic(text: String) {

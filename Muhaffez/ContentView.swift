@@ -10,7 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
     @StateObject var viewModel = QuranViewModel()
-    @State private var isRecording = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -19,32 +18,48 @@ struct ContentView: View {
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-                .frame(height: 500) // adjust height as needed
-                .border(Color.gray)
-                .padding()
-            Button(action: {
-                if isRecording {
-                    recognizer.stopRecording()
-                } else {
-                    try? recognizer.startRecording()
-                }
-                isRecording.toggle()
-            }) {
-                Image(systemName: isRecording ? "mic.fill" : "mic")
-                    .font(.system(size: 40))
-                    .foregroundColor(isRecording ? .red : .blue)
-                    .padding()
-                    .background(Circle().fill(Color(.systemGray6)))
-                    .shadow(radius: 4)
-            }
-
-            Button("Speak Arabic") {
-                viewModel.speakArabic(text: viewModel.voiceText)
-            }
+            .frame(height: 500) // adjust height as needed
+            .border(Color.gray)
             .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+            HStack(spacing: 30) {
+                Button(action: {
+                    if viewModel.isRecording {
+                        recognizer.stopRecording()
+                    } else {
+                        try? recognizer.startRecording()
+                    }
+                    viewModel.isRecording.toggle()
+                }) {
+                    Image(systemName: viewModel.isRecording ? "mic.fill" : "mic")
+                        .font(.system(size: 40))
+                        .foregroundColor(viewModel.isRecording ? .red : .blue)
+                        .padding()
+                        .background(Circle().fill(Color(.systemGray6)))
+                        .shadow(radius: 4)
+                }
+                Button(action: {
+                    recognizer.stopRecording()
+                    Task {
+                        viewModel.isRecording = false
+                        viewModel.voiceText = ""
+                        viewModel.matchedWords = []
+                    }
+                }) {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.red)
+                        .padding()
+                        .background(Circle().fill(Color(.systemGray6)))
+                        .shadow(radius: 4)
+                }
+            }
+            //            Button("Speak Arabic") {
+            //                viewModel.speakArabic(text: viewModel.voiceText)
+            //            }
+            //            .padding()
+            //            .background(Color.blue)
+            //            .foregroundColor(.white)
+            //            .cornerRadius(8)
         }
         .onChange(of: recognizer.voiceText) { _, newValue in
             print("#quran newValue: \(newValue)")
