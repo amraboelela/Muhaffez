@@ -27,7 +27,7 @@ class QuranViewModel: ObservableObject {
     private let synthesizer = AVSpeechSynthesizer()
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    let matchThreshold = 0.4
+    let matchThreshold = 0.5
 
     // Load file into memory at app launch
     let quranLines: [String] = {
