@@ -17,10 +17,6 @@ extension String {
 
     func removingControlCharacters() -> String {
         self.replacingOccurrences(of: "\\p{Cf}", with: "", options: .regularExpression)
-
-//        self.unicodeScalars.filter { !$0.properties.isControl && $0 != "\u{200F}" }
-//            .map { String($0) }
-//            .joined()
     }
 
     var normalizedArabic: String {
