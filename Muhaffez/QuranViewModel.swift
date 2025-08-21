@@ -10,12 +10,13 @@ import AVFoundation
 
 @MainActor
 class QuranViewModel: ObservableObject {
+
     var voiceText = "" {
         didSet {
             quranWords = quranText.split(separator: " ").map { String($0) }
             voiceWords = voiceText.split(separator: " ").map { String($0) }
             if !voiceText.isEmpty {
-                updateQuranText()
+                updateFoundAyat()
                 updateMatchedWords()
             }
         }
@@ -23,8 +24,9 @@ class QuranViewModel: ObservableObject {
     @Published var isRecording = false
     @Published var matchedWords: [(String, Bool)] = []
     private let synthesizer = AVSpeechSynthesizer()
+    private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    let matchThreshold = 0.7
+    let matchThreshold = 0.5
 
     // Load file into memory at app launch
     let quranLines: [String] = {
@@ -52,16 +54,72 @@ class QuranViewModel: ObservableObject {
     var quranWords = [String]()
     var voiceWords = [String]()
 
-    func updateQuranText() {
+    func resetData() {
         foundAyat.removeAll()
-        guard !voiceText.isEmpty else { return }
+        quranText = ""
+        matchedWords = []
+        voiceText = ""
+    }
+
+    func updateFoundAyat() {
+        guard !voiceText.isEmpty else {
+            return
+        }
+        guard foundAyat.count != 1 else {
+            return
+        }
+        foundAyat.removeAll()
         let normVoice = voiceText.normalizedArabic
         for (index, line) in quranLines.enumerated() {
             if line.normalizedArabic.hasPrefix(normVoice) {
                 foundAyat.append(index)
             }
         }
+        // If no prefix matches → debounce the expensive fallback
+        if foundAyat.isEmpty {
+            debounceTimer?.invalidate()
+            debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.performFallbackMatch(normVoice: normVoice)
+                }
+            }
+        }
         print("#quran foundAyat: \(foundAyat)")
+        updateQuranText()
+    }
+
+    private func performFallbackMatch(normVoice: String) {
+        var bestIndex: Int?
+        var bestScore = 0.0
+
+        print("#quran performFallbackMatch normVoice: \(normVoice)")
+        for (index, line) in quranLines.enumerated() {
+            let lineNorm = line.normalizedArabic
+            // Take only the prefix of the line equal to the length of normVoice
+            if lineNorm.count < normVoice.count {
+                continue
+            }
+            let prefix = String(lineNorm.prefix(normVoice.count))
+            let score = normVoice.similarity(to: prefix)
+
+            if score > bestScore {
+                bestScore = score
+                bestIndex = index
+            }
+            if score > 0.8 {
+                break
+            }
+        }
+
+        if let bestIndex {
+            foundAyat = [bestIndex]
+            print("#quran performFallbackMatch foundAyat: \(foundAyat)")
+            updateQuranText()
+            updateMatchedWords()
+        }
+    }
+
+    func updateQuranText() {
         if let firstIndex = foundAyat.first {
             quranText = quranLines[firstIndex]
             print("#quran quranText: \(quranText)")
@@ -75,6 +133,9 @@ class QuranViewModel: ObservableObject {
 
     // Map voice words to closest Qur’an words
     func updateMatchedWords() {
+        guard foundAyat.count == 1 else {
+            return
+        }
         peekTimer?.invalidate()
         peekTimer = nil
         peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
@@ -188,13 +249,6 @@ class QuranViewModel: ObservableObject {
             results.append((quranWords[quranWordsIndex], false))
             matchedWords = results
             print("#quran matchedWords: \(matchedWords)")
-            speakArabic(text: voiceToSpeak)
         }
-    }
-
-    func speakArabic(text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "ar-SA")
-        synthesizer.speak(utterance)
     }
 }
