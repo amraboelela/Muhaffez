@@ -7,6 +7,7 @@
 
 import Speech
 import AVFoundation
+import SwiftUI
 
 @MainActor
 class QuranViewModel: ObservableObject {
@@ -26,7 +27,7 @@ class QuranViewModel: ObservableObject {
     private let synthesizer = AVSpeechSynthesizer()
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    let matchThreshold = 0.5
+    let matchThreshold = 0.4
 
     // Load file into memory at app launch
     let quranLines: [String] = {
@@ -53,6 +54,13 @@ class QuranViewModel: ObservableObject {
     }
     var quranWords = [String]()
     var voiceWords = [String]()
+
+    var displayText: AttributedString {
+        guard let ayaIndex = foundAyat.first else {
+            return AttributedString("")
+        }
+        return AttributedString.coloredFromMatched(matches: matchedWords, quranLines: quranLines, firstIndex: ayaIndex)
+    }
 
     func resetData() {
         foundAyat.removeAll()

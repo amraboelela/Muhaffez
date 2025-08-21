@@ -12,7 +12,7 @@ struct ContentView: View {
     @StateObject var viewModel = QuranViewModel()
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading) {
@@ -20,7 +20,7 @@ struct ContentView: View {
                             Text("...")
                                 .environment(\.layoutDirection, .rightToLeft)
                         } else {
-                            Text(AttributedString.coloredFromMatched(viewModel.matchedWords))
+                            Text(viewModel.displayText)
                                 .environment(\.layoutDirection, .rightToLeft)
                                 .padding()
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -30,7 +30,6 @@ struct ContentView: View {
                             .id("BOTTOM")
                     }
                 }
-                .frame(height: 500) // adjust height as needed
                 .border(Color.gray)
                 .padding()
                 .onChange(of: recognizer.voiceText) { _, _ in
@@ -39,15 +38,15 @@ struct ContentView: View {
                     }
                 }
             }
-            //HStack(spacing: 30) {
             Button(action: {
                 if viewModel.isRecording {
                     recognizer.stopRecording()
-                    Task {
-                        viewModel.resetData()
-                    }
+
                 } else {
-                    try? recognizer.startRecording()
+                    viewModel.resetData()
+                    Task {
+                        try? recognizer.startRecording()
+                    }
                 }
                 viewModel.isRecording.toggle()
             }) {
@@ -58,22 +57,6 @@ struct ContentView: View {
                     .background(Circle().fill(Color(.systemGray6)))
                     .shadow(radius: 4)
             }
-            //                Button(action: {
-            //                    recognizer.stopRecording()
-            //                    Task {
-            //                        viewModel.isRecording = false
-            //                        viewModel.voiceText = ""
-            //                        viewModel.matchedWords = []
-            //                    }
-            //                }) {
-            //                    Image(systemName: "arrow.clockwise.circle.fill")
-            //                        .font(.system(size: 40))
-            //                        .foregroundColor(.red)
-            //                        .padding()
-            //                        .background(Circle().fill(Color(.systemGray6)))
-            //                        .shadow(radius: 4)
-            //                }
-            //}
         }
         .onChange(of: recognizer.voiceText) { _, newValue in
             print("#quran newValue: \(newValue)")
