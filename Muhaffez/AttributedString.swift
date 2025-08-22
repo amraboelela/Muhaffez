@@ -8,23 +8,6 @@
 import SwiftUI
 
 extension AttributedString {
-//    static func coloredFromMatched(matches: [(String, Bool)], quranLines: [String], firstIndex: Int) -> AttributedString {
-//        var result = AttributedString()
-//
-//        for (index, (word, isMatched)) in matches.enumerated() {
-//            var attributedWord = AttributedString(word)
-//
-//            // Apply attributes directly and in a type-safe way
-//            attributedWord.foregroundColor = isMatched ? .darkGreen : .red
-//            attributedWord.font = .system(size: 18, weight: .regular)
-//
-//            result += attributedWord
-//            if index < matches.count - 1 {
-//                result += " "
-//            }
-//        }
-//        return result
-//    }
 
     static func coloredFromMatched(
         matches: [(String, Bool)],
