@@ -10,11 +10,13 @@ import AVFoundation
 import SwiftUI
 
 @MainActor
-class QuranViewModel: ObservableObject {
+@Observable
+class QuranViewModel {
+
+    // MARK: - Public Properties
 
     var voiceText = "" {
         didSet {
-            quranWords = quranText.split(separator: " ").map { String($0) }
             voiceWords = voiceText.split(separator: " ").map { String($0) }
             if !voiceText.isEmpty {
                 updateFoundAyat()
@@ -22,45 +24,80 @@ class QuranViewModel: ObservableObject {
             }
         }
     }
-    @Published var isRecording = false
-    @Published var matchedWords: [(String, Bool)] = []
-    private let synthesizer = AVSpeechSynthesizer()
-    private var debounceTimer: Timer?
-    private var peekTimer: Timer?
-    let matchThreshold = 0.5
 
-    // Load file into memory at app launch
-    let quranLines: [String] = {
-        if let path = Bundle.main.path(forResource: "quran-simple-min", ofType: "txt") {
-            do {
-                let content = try String(contentsOfFile: path, encoding: .utf8)
-                // Split into lines
-                return content.components(separatedBy: .newlines)
-                    .filter { !$0.isEmpty } // remove empty lines
-            } catch {
-                print("❌ Error reading file:", error)
-                return []
-            }
-        } else {
-            print("❌ File not found in bundle")
-            return []
-        }
-    }()
+    var isRecording = false
+    var matchedWords: [(String, Bool)] = []
     var foundAyat = [Int]()
+
     var quranText = "" {
         didSet {
             quranWords = quranText.split(separator: " ").map { String($0) }
         }
     }
+
     var quranWords = [String]()
     var voiceWords = [String]()
+    var quranLines = [String]()         // Lines of the Quran text
+    var pageMarkers = [Int]()           // Aya numbers marking new pages
+
+    // MARK: - Computed Properties
 
     var displayText: AttributedString {
-        guard let ayaIndex = foundAyat.first else {
-            return AttributedString("")
-        }
-        return AttributedString.coloredFromMatched(matches: matchedWords, quranLines: quranLines, firstIndex: ayaIndex)
+        guard let ayaIndex = foundAyat.first else { return AttributedString("") }
+        return AttributedString.coloredFromMatched(
+            matches: matchedWords,
+            quranLines: quranLines,
+            firstIndex: ayaIndex
+        )
     }
+
+    // MARK: - Private Properties
+
+    private let synthesizer = AVSpeechSynthesizer()
+    private var debounceTimer: Timer?
+    private var peekTimer: Timer?
+    private let matchThreshold = 0.5
+
+    // MARK: - Initialization
+
+    init() {
+        loadQuranData()
+    }
+
+    // MARK: - Data Loading
+
+    private func loadQuranData() {
+        guard let path = Bundle.main.path(forResource: "quran-simple-min", ofType: "txt") else {
+            print("❌ File not found in bundle")
+            return
+        }
+
+        do {
+            let content = try String(contentsOfFile: path, encoding: .utf8)
+            let allLines = content.components(separatedBy: .newlines)
+
+            var lines = [String]()
+            var pageMarkersTemp = [Int]()
+            var ayaCounter = 0
+
+            for line in allLines {
+                if line.isEmpty {
+                    pageMarkersTemp.append(ayaCounter)  // Marks new page start
+                } else {
+                    lines.append(line)
+                    ayaCounter += 1
+                }
+            }
+
+            self.quranLines = lines
+            self.pageMarkers = pageMarkersTemp
+
+        } catch {
+            print("❌ Error reading file:", error)
+        }
+    }
+
+    // MARK: - Public Actions
 
     func resetData() {
         foundAyat.removeAll()
@@ -69,21 +106,23 @@ class QuranViewModel: ObservableObject {
         voiceText = ""
     }
 
+    // MARK: - Aya Matching
+
     func updateFoundAyat() {
-        guard !voiceText.isEmpty else {
-            return
-        }
-        guard foundAyat.count != 1 else {
-            return
-        }
+        guard !voiceText.isEmpty else { return }
+        guard foundAyat.count != 1 else { return }
+
         foundAyat.removeAll()
         let normVoice = voiceText.normalizedArabic
+
+        // Fast prefix check
         for (index, line) in quranLines.enumerated() {
             if line.normalizedArabic.hasPrefix(normVoice) {
                 foundAyat.append(index)
             }
         }
-        // If no prefix matches → debounce the expensive fallback
+
+        // Fallback with debounce if no matches
         if foundAyat.isEmpty {
             debounceTimer?.invalidate()
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
@@ -92,6 +131,7 @@ class QuranViewModel: ObservableObject {
                 }
             }
         }
+
         print("#quran foundAyat: \(foundAyat)")
         updateQuranText()
     }
@@ -100,13 +140,10 @@ class QuranViewModel: ObservableObject {
         var bestIndex: Int?
         var bestScore = 0.0
 
-        print("#quran performFallbackMatch normVoice: \(normVoice)")
         for (index, line) in quranLines.enumerated() {
             let lineNorm = line.normalizedArabic
-            // Take only the prefix of the line equal to the length of normVoice
-            if lineNorm.count < normVoice.count {
-                continue
-            }
+            guard lineNorm.count >= normVoice.count else { continue }
+
             let prefix = String(lineNorm.prefix(normVoice.count))
             let score = normVoice.similarity(to: prefix)
 
@@ -114,23 +151,21 @@ class QuranViewModel: ObservableObject {
                 bestScore = score
                 bestIndex = index
             }
-            if score > 0.8 {
-                break
-            }
+
+            if score > 0.8 { break }
         }
 
         if let bestIndex {
             foundAyat = [bestIndex]
-            print("#quran performFallbackMatch foundAyat: \(foundAyat)")
             updateQuranText()
             updateMatchedWords()
         }
     }
 
-    func updateQuranText() {
+    private func updateQuranText() {
         if let firstIndex = foundAyat.first {
             quranText = quranLines[firstIndex]
-            print("#quran quranText: \(quranText)")
+
             if foundAyat.count == 1 {
                 let endIndex = min(firstIndex + 100, quranLines.count)
                 let extraLines = quranLines[(firstIndex + 1)..<endIndex]
@@ -139,124 +174,96 @@ class QuranViewModel: ObservableObject {
         }
     }
 
-    // Map voice words to closest Qur’an words
+    // MARK: - Word Matching
+
     func updateMatchedWords() {
-        guard foundAyat.count == 1 else {
-            return
-        }
+        guard foundAyat.count == 1 else { return }
+
         peekTimer?.invalidate()
-        peekTimer = nil
         peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.peekHelper()
-            }
+            Task { @MainActor in self?.peekHelper() }
         }
 
         var results: [(String, Bool)] = []
-
         var quranWordsIndex = -1
+
         for voiceWord in voiceWords {
             quranWordsIndex += 1
-            guard quranWordsIndex < quranWords.count else {
-                break
-            }
+            guard quranWordsIndex < quranWords.count else { break }
+
             let normVoiceWord = voiceWord.normalizedArabic
-            var qWord = quranWords[quranWordsIndex]
-            var normQWord = qWord.normalizedArabic
-            var score = normVoiceWord.similarity(to: normQWord)
+            let qWord = quranWords[quranWordsIndex]
+            let normQWord = qWord.normalizedArabic
+            let score = normVoiceWord.similarity(to: normQWord)
+
+            // Direct match
             if score >= matchThreshold {
                 results.append((qWord, true))
-            } else {
-                if quranWordsIndex - 1 >= 0 { // check backward
-                    qWord = quranWords[quranWordsIndex - 1]
-                    normQWord = qWord.normalizedArabic
-                    score = normVoiceWord.similarity(to: normQWord)
-                    if score >= matchThreshold {
-                        quranWordsIndex -= 1
-                        results.removeLast()
-                        results.append((qWord, true))
-                        continue
-                    } else if quranWordsIndex - 2 >= 0 {
-                        qWord = quranWords[quranWordsIndex - 2]
-                        normQWord = qWord.normalizedArabic
-                        score = normVoiceWord.similarity(to: normQWord)
-                        if score >= matchThreshold {
-                            quranWordsIndex -= 2
-                            results.removeLast(2)
-                            results.append((qWord, true))
-                            continue
-                        } else if quranWordsIndex - 3 >= 0 {
-                            qWord = quranWords[quranWordsIndex - 3]
-                            normQWord = qWord.normalizedArabic
-                            score = normVoiceWord.similarity(to: normQWord)
-                            if score >= matchThreshold {
-                                quranWordsIndex -= 3
-                                results.removeLast(3)
-                                results.append((qWord, true))
-                                continue
-                            }
-                        }
-                    }
-                }
-                if quranWordsIndex + 1 < quranWords.count { // check forward
-                    qWord = quranWords[quranWordsIndex + 1]
-                    normQWord = qWord.normalizedArabic
-                    score = normVoiceWord.similarity(to: normQWord)
-                    if score >= matchThreshold {
-                        results.append((quranWords[quranWordsIndex], false))
-                        quranWordsIndex += 1
-                        results.append((quranWords[quranWordsIndex], true))
-                        continue
-                    } else if quranWordsIndex + 2 < quranWords.count {
-                        qWord = quranWords[quranWordsIndex + 2]
-                        normQWord = qWord.normalizedArabic
-                        score = normVoiceWord.similarity(to: normQWord)
-                        if score >= matchThreshold {
-                            results.append((quranWords[quranWordsIndex], false))
-                            quranWordsIndex += 1
-                            results.append((quranWords[quranWordsIndex], false))
-                            quranWordsIndex += 1
-                            results.append((quranWords[quranWordsIndex], true))
-                            continue
-                        } else if quranWordsIndex + 3 < quranWords.count {
-                            qWord = quranWords[quranWordsIndex + 3]
-                            normQWord = qWord.normalizedArabic
-                            score = normVoiceWord.similarity(to: normQWord)
-                            if score >= matchThreshold {
-                                results.append((quranWords[quranWordsIndex], false))
-                                quranWordsIndex += 1
-                                results.append((quranWords[quranWordsIndex], false))
-                                quranWordsIndex += 1
-                                results.append((quranWords[quranWordsIndex], false))
-                                quranWordsIndex += 1
-                                results.append((quranWords[quranWordsIndex], true))
-                                continue
-                            }
-                        }
-                    }
-                }
-                results.append((quranWords[quranWordsIndex], false))
+                continue
             }
+
+            // Try backward and forward search
+            if tryBackwardMatch(&quranWordsIndex, normVoiceWord, &results) { continue }
+            if tryForwardMatch(&quranWordsIndex, normVoiceWord, &results) { continue }
+
+            results.append((quranWords[quranWordsIndex], false))
         }
+
         matchedWords = results
-        print("#quran matchedWords: \(matchedWords)")
     }
 
-    func peekHelper() {
-        print("#quran peekHelper")
-        guard isRecording else {
-            return
+    private func tryBackwardMatch(
+        _ index: inout Int,
+        _ voice: String,
+        _ results: inout [(String, Bool)]
+    ) -> Bool {
+        for step in 1...3 {
+            guard index - step >= 0 else { break }
+            let qWord = quranWords[index - step]
+            if voice.similarity(to: qWord.normalizedArabic) >= matchThreshold {
+                index -= step
+                results.removeLast(step)
+                results.append((qWord, true))
+                return true
+            }
         }
+        return false
+    }
+
+    private func tryForwardMatch(
+        _ index: inout Int,
+        _ voice: String,
+        _ results: inout [(String, Bool)]
+    ) -> Bool {
+        for step in 1...3 {
+            guard index + step < quranWords.count else { break }
+            let qWord = quranWords[index + step]
+            if voice.similarity(to: qWord.normalizedArabic) >= matchThreshold {
+                results.append((quranWords[index], false))
+                for s in 1..<step {
+                    results.append((quranWords[index + s], false))
+                }
+                index += step
+                results.append((qWord, true))
+                return true
+            }
+        }
+        return false
+    }
+
+    // MARK: - Peek Helper
+
+    func peekHelper() {
+        guard isRecording else { return }
+
         var results = matchedWords
         var quranWordsIndex = matchedWords.count
+
         if quranWordsIndex + 2 < quranWords.count {
-            var voiceToSpeak = quranWords[quranWordsIndex] + " "
             results.append((quranWords[quranWordsIndex], false))
-            quranWordsIndex += 1
-            voiceToSpeak += quranWords[quranWordsIndex]
-            results.append((quranWords[quranWordsIndex], false))
+            results.append((quranWords[quranWordsIndex + 1], false))
             matchedWords = results
-            print("#quran matchedWords: \(matchedWords)")
         }
     }
 }
+

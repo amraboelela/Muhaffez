@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
-    @StateObject var viewModel = QuranViewModel()
+    @State var viewModel = QuranViewModel()
 
     var body: some View {
         VStack {
