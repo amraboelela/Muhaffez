@@ -20,16 +20,23 @@ extension String {
     }
 
     var normalizedArabic: String {
-        // 1. Remove diacritics (tashkeel)
+        // 1. Remove diacritics (tashkeel) and control characters
         var text = self.removingTashkeel.removingControlCharacters()
 
         // 2. Normalize hamza variants
         let hamzaMap: [Character: Character] = [
             "إ": "ا", "أ": "ا", "آ": "ا",
-            "ؤ": "و", "ئ": "ي" // optionally normalize these too
+            "ؤ": "و", "ئ": "ي"
         ]
-
         text = String(text.map { hamzaMap[$0] ?? $0 })
+
+        // 3. Remove "بسم الله الرحمن الرحيم" at the beginning if present
+        let basmala = "بسم الله الرحمن الرحيم"
+        if text.hasPrefix(basmala) {
+            text.removeSubrange(text.startIndex..<text.index(text.startIndex, offsetBy: basmala.count))
+            text = text.trimmingCharacters(in: .whitespaces)
+        }
+
         return text
     }
 

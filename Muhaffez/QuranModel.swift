@@ -42,4 +42,21 @@ class QuranModel {
         self.quranLines = lines
         self.pageMarkers = markers
     }
+
+    /// Returns the page number for the given ayah index
+    func pageNumber(forAyahIndex index: Int) -> Int? {
+        guard !pageMarkers.isEmpty, index >= 0, index < quranLines.count else {
+            return nil
+        }
+
+        // Find the first marker greater than the index → that's the next page start
+        for (pageIndex, marker) in pageMarkers.enumerated() {
+            if index < marker {
+                return pageIndex + 1 // Pages are usually 1-based
+            }
+        }
+
+        // If it's after the last marker, it's on the last page
+        return pageMarkers.count + 1
+    }
 }

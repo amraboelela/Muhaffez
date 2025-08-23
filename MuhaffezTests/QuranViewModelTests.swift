@@ -52,8 +52,9 @@ struct QuranViewModelTests {
         // Voice text that doesn't exactly match any line
         viewModel.voiceText = "الله يأمرك بالعدل"
 
-        // Wait 1.1 seconds to allow the debounce timer to fire
-        try await Task.sleep(for: .seconds(2))
+        while viewModel.foundAyat.count == 0 {
+            try await Task.sleep(for: .seconds(1))
+        }
         var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         print("matchedWords: \(viewModel.matchedWords)")
         print("matchedTrues: \(matchedTrues)")
@@ -119,11 +120,30 @@ struct QuranViewModelTests {
         #expect(matchedTrues.contains("اللَّهَ"))
     }
 
+    @Test func testBesmeAllah() async throws {
+        let viewModel = QuranViewModel()
+
+        viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ"
+        var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        #expect(viewModel.foundAyat.count == 0)
+
+        viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        print("matchedWords: \(viewModel.matchedWords)")
+        print("matchedTrues: \(matchedTrues)")
+        print("viewModel.foundAyat: \(viewModel.foundAyat)")
+        print("quranLines[viewModel.foundAyat.first!]: \(quranLines[viewModel.foundAyat.first!])")
+        #expect(viewModel.foundAyat.count == 1)
+        #expect(viewModel.foundAyat.first! == 7)
+    }
+
     @Test func testBackwardMatch() async throws {
         let viewModel = QuranViewModel()
 
         viewModel.voiceText = "ان الله يامركم يامركم "
-        try await Task.sleep(for: .seconds(2))
+        while viewModel.foundAyat.count == 0 {
+            try await Task.sleep(for: .seconds(1))
+        }
         var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.contains("إِنَّ"))
         #expect(matchedTrues.contains("اللَّهَ"))

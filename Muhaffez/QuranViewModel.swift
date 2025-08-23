@@ -75,7 +75,8 @@ class QuranViewModel {
 
         foundAyat.removeAll()
         let normVoice = voiceText.normalizedArabic
-
+        guard !normVoice.isEmpty else { return }
+        
         // Fast prefix check
         for (index, line) in quranLines.enumerated() {
             if line.normalizedArabic.hasPrefix(normVoice) {

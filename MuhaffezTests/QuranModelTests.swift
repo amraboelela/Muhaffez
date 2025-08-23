@@ -58,4 +58,18 @@ struct QuranModelTests {
         let sortedMarkers = model.pageMarkers.sorted()
         #expect(model.pageMarkers == sortedMarkers, "Page markers should be sorted ascending")
     }
+
+    @Test("Page number lookup works correctly")
+    func testPageNumberForAyahIndex() async throws {
+        // Create a dummy QuranModel with fake data
+        let model = QuranModel.shared
+
+        // Test ayah indices on different pages
+        #expect(model.pageNumber(forAyahIndex: 0) == 1)   // Page 1
+        #expect(model.pageNumber(forAyahIndex: 7) == 2)   // Page 2
+        #expect(model.pageNumber(forAyahIndex: 12) == 3)  // Page 3
+        #expect(model.pageNumber(forAyahIndex: 17) == 3)  // Page 4
+        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[281]) == 283)
+        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[602]) == 604)
+    }
 }
