@@ -14,7 +14,7 @@ struct MuhaffezApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MuhaffezView()
                 .onAppear {
                     SFSpeechRecognizer.requestAuthorization { status in
                         switch status {

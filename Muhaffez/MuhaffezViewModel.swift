@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  MuhaffezViewModel.swift
 //  Muhaffez
 //
 //  Created by Amr Aboelela on 8/18/25.
@@ -11,7 +11,7 @@ import SwiftUI
 
 @MainActor
 @Observable
-class QuranViewModel {
+class MuhaffezViewModel {
 
     // MARK: - Public Properties
 
@@ -40,17 +40,6 @@ class QuranViewModel {
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers
 
-    // MARK: - Computed Properties
-
-    var displayText: AttributedString {
-        guard let ayaIndex = foundAyat.first else { return AttributedString("") }
-        return AttributedString.coloredFromMatched(
-            matches: matchedWords,
-            quranLines: quranLines,
-            firstIndex: ayaIndex
-        )
-    }
-
     // MARK: - Private Properties
 
     private let synthesizer = AVSpeechSynthesizer()
@@ -69,8 +58,7 @@ class QuranViewModel {
 
     // MARK: - Aya Matching
 
-    func updateFoundAyat() {
-        guard !voiceText.isEmpty else { return }
+    private func updateFoundAyat() {
         guard foundAyat.count != 1 else { return }
 
         foundAyat.removeAll()

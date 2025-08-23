@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  MuhaffezView.swift
 //  Muhaffez
 //
 //  Created by Amr Aboelela on 8/18/25.
@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct MuhaffezView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
-    @State var viewModel = QuranViewModel()
+    @State var viewModel = MuhaffezViewModel()
 
     var body: some View {
         VStack {
@@ -70,5 +70,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    MuhaffezView()
 }
