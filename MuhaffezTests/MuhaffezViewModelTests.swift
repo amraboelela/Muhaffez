@@ -126,7 +126,7 @@ struct MuhaffezViewModelTests {
         #expect(matchedTrues.contains("اللَّهَ"))
     }
 
-    @Test func testBesmeAllah() async throws {
+    @Test func testBesmAllah() async throws {
         let viewModel = MuhaffezViewModel()
 
         viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ"

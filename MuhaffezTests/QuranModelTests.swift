@@ -72,4 +72,62 @@ struct QuranModelTests {
         #expect(model.pageNumber(forAyahIndex: model.pageMarkers[281]) == 283)
         #expect(model.pageNumber(forAyahIndex: model.pageMarkers[602]) == 604)
     }
+
+    @Test("Test pageNumber(forAyahIndex:)")
+    func testPageNumber() async throws {
+        let model = QuranModel.shared
+
+        // Suppose pageMarkers were set correctly from your file
+        #expect(model.pageNumber(forAyahIndex: 0) == 1)   // First ayah should be on page 1
+
+        if let lastAyahIndex = model.quranLines.indices.last {
+            #expect(model.pageNumber(forAyahIndex: lastAyahIndex) == model.pageMarkers.count + 1)
+        }
+    }
+
+    @Test("Test rub3Number(forAyahIndex:)")
+    func testRub3Number() async throws {
+        let model = QuranModel.shared
+
+        print("model.rub3Markers.first: \(model.rub3Markers.first!)")
+        print("model.quranLines[model.rub3Markers.first!]: \(model.quranLines[model.rub3Markers.first!])")
+        // rub3Markers contains starting ayah indexes for each rub3
+        if let firstRub3 = model.rub3Markers.first {
+            #expect(model.rub3Number(forAyahIndex: firstRub3) == 2)
+        } else if let lastRub3 = model.rub3Markers.last {
+            #expect(model.rub3Number(forAyahIndex: lastRub3) == 30)
+            #expect(model.rub3Number(forAyahIndex: lastRub3 + 10) == 30)
+        }
+    }
+
+    @Test("rub3Number covers last return line")
+    func testRub3Number_LastLine() async throws {
+        // Setup a mock model
+        let model = QuranModel.shared
+
+        // Index after the last marker (e.g., ayah 180) should be in the last rub3 section
+        let index = model.quranLines.count - 1
+        let result = model.rub3Number(forAyahIndex: index)
+
+        // rub3Markers.count = 4, so last rub3 = 5
+        #expect(result == model.rub3Markers.count + 1)
+    }
+
+    @Test("Test juz2Number(forAyahIndex:)")
+    func testJuz2Number() async throws {
+        let model = QuranModel.shared
+
+        // Each juz = 8 rub3
+        if let firstRub3 = model.rub3Markers.first {
+            #expect(model.juz2Number(forAyahIndex: firstRub3) == 1)
+        }
+
+        let fifthRub3 = model.rub3Markers[4]
+        #expect(model.juz2Number(forAyahIndex: fifthRub3) == 1)
+        let eighthRub3 = model.rub3Markers[7]
+        #expect(model.juz2Number(forAyahIndex: eighthRub3) == 2)
+        let ninthRub3 = model.rub3Markers[8]
+        #expect(model.juz2Number(forAyahIndex: ninthRub3) == 2)
+    }
+
 }

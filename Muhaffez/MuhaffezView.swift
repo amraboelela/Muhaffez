@@ -13,31 +13,26 @@ struct MuhaffezView: View {
 
     var body: some View {
         VStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading) {
-                        if viewModel.matchedWords.count == 0 && !viewModel.voiceText.isEmpty {
-                            Text("...")
-                                .environment(\.layoutDirection, .rightToLeft)
-                        } else {
-                            Text(viewModel.displayText)
-                                .environment(\.layoutDirection, .rightToLeft)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        Color.clear
-                            .frame(height: 1)
-                            .id("BOTTOM")
+            VStack(alignment: .leading) {
+                if viewModel.matchedWords.count == 0 && !viewModel.voiceText.isEmpty {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                            .scaleEffect(2)
+                        Spacer()
                     }
+                } else {
+                    Text(viewModel.displayText)
+                        .environment(\.layoutDirection, .rightToLeft)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .border(Color.gray)
-                .padding()
-                .onChange(of: recognizer.voiceText) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("BOTTOM", anchor: .bottom)
-                    }
-                }
+                Spacer()
             }
+            .border(Color.gray)
+            .padding()
             Button(action: {
                 if viewModel.isRecording {
                     recognizer.stopRecording()
@@ -63,8 +58,12 @@ struct MuhaffezView: View {
             viewModel.voiceText = newValue
         }
         .onAppear {
+            // testing progress view
+//            viewModel.voiceText = "123"
+
             // Use this for testing
-            //                        viewModel.matchedWords = [("Verily", true), ("Allah", true), ("order", true), ("you", true), ("to", false), ("fullfill", true), ("the", false), ("deeds", true), ("of", false), ("your", false), ("parents", true), ("with", false), ("mercies", true), ("from", false), ("your", false), ("Lord", true), (".", false) ]
+//            viewModel.foundAyat = [10]
+//            viewModel.matchedWords = [("Verily", true), ("Allah", true), ("order", true), ("you", true), ("to", false), ("fullfill", true), ("the", false), ("deeds", true), ("of", false), ("your", false), ("parents", true), ("with", false), ("mercies", true), ("from", false), ("your", false), ("Lord", true), (".", false) ]
         }
     }
 }

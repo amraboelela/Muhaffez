@@ -39,6 +39,7 @@ class MuhaffezViewModel {
     var voiceWords = [String]()
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers
+    let rub3Markers = QuranModel.shared.rub3Markers
 
     // MARK: - Private Properties
 
