@@ -1,0 +1,61 @@
+//
+//  QuranModelTests.swift
+//  MuhaffezTests
+//
+//  Created by Amr Aboelela on 8/22/25.
+//
+
+import Testing
+@testable import Muhaffez
+
+@MainActor
+struct QuranModelTests {
+
+    @Test func testSingletonSharedInstance() {
+        let instance1 = QuranModel.shared
+        let instance2 = QuranModel.shared
+
+        // Ensure both instances are identical (singleton)
+        #expect(instance1 === instance2)
+    }
+
+    @Test func testQuranLinesNotEmpty() {
+        let model = QuranModel.shared
+        #expect(!model.quranLines.isEmpty, "Quran lines should not be empty")
+    }
+
+    @Test func testPageMarkersNotEmpty() {
+        let model = QuranModel.shared
+        #expect(!model.pageMarkers.isEmpty, "Page markers should not be empty")
+    }
+
+    @Test func testFirstLineContent() {
+        let model = QuranModel.shared
+        let firstLine = model.quranLines.first ?? ""
+
+        // Make a simple sanity check: first line should contain Arabic text
+        #expect(!firstLine.isEmpty)
+        #expect(firstLine.range(of: "\\p{Arabic}", options: .regularExpression) != nil, "First line should contain Arabic characters")
+    }
+
+    @Test func testPageMarkersInRange() {
+        let model = QuranModel.shared
+
+        // All page markers should be valid indexes within quranLines
+        for marker in model.pageMarkers {
+            #expect(marker >= 0 && marker < model.quranLines.count)
+        }
+        #expect(model.pageMarkers.count == 603)
+        #expect(model.quranLines[model.pageMarkers[0]] == "الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ")
+        #expect(model.quranLines[model.pageMarkers[49]] == "إِنَّ الَّذينَ كَفَروا لَن تُغنِيَ عَنهُم أَموالُهُم وَلا أَولادُهُم مِنَ اللَّهِ شَيئًا وَأُولٰئِكَ هُم وَقودُ النّارِ")
+        #expect(model.quranLines[model.pageMarkers[127]] == "وَلَو جَعَلناهُ مَلَكًا لَجَعَلناهُ رَجُلًا وَلَلَبَسنا عَلَيهِم ما يَلبِسونَ")
+        #expect(model.quranLines[model.pageMarkers[281]] == "عَسىٰ رَبُّكُم أَن يَرحَمَكُم وَإِن عُدتُم عُدنا وَجَعَلنا جَهَنَّمَ لِلكافِرينَ حَصيرًا")
+        #expect(model.quranLines[model.pageMarkers[602]] == "قُل هُوَ اللَّهُ أَحَدٌ")
+    }
+
+    @Test func testPageMarkersSorted() {
+        let model = QuranModel.shared
+        let sortedMarkers = model.pageMarkers.sorted()
+        #expect(model.pageMarkers == sortedMarkers, "Page markers should be sorted ascending")
+    }
+}

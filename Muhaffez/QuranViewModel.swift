@@ -37,8 +37,8 @@ class QuranViewModel {
 
     var quranWords = [String]()
     var voiceWords = [String]()
-    var quranLines = [String]()         // Lines of the Quran text
-    var pageMarkers = [Int]()           // Aya numbers marking new pages
+    let quranLines = QuranModel.shared.quranLines
+    let pageMarkers = QuranModel.shared.pageMarkers
 
     // MARK: - Computed Properties
 
@@ -56,46 +56,7 @@ class QuranViewModel {
     private let synthesizer = AVSpeechSynthesizer()
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    private let matchThreshold = 0.5
-
-    // MARK: - Initialization
-
-    init() {
-        loadQuranData()
-    }
-
-    // MARK: - Data Loading
-
-    private func loadQuranData() {
-        guard let path = Bundle.main.path(forResource: "quran-simple-min", ofType: "txt") else {
-            print("❌ File not found in bundle")
-            return
-        }
-
-        do {
-            let content = try String(contentsOfFile: path, encoding: .utf8)
-            let allLines = content.components(separatedBy: .newlines)
-
-            var lines = [String]()
-            var pageMarkersTemp = [Int]()
-            var ayaCounter = 0
-
-            for line in allLines {
-                if line.isEmpty {
-                    pageMarkersTemp.append(ayaCounter)  // Marks new page start
-                } else {
-                    lines.append(line)
-                    ayaCounter += 1
-                }
-            }
-
-            self.quranLines = lines
-            self.pageMarkers = pageMarkersTemp
-
-        } catch {
-            print("❌ Error reading file:", error)
-        }
-    }
+    private let matchThreshold = 0.7
 
     // MARK: - Public Actions
 
@@ -144,15 +105,14 @@ class QuranViewModel {
             let lineNorm = line.normalizedArabic
             guard lineNorm.count >= normVoice.count else { continue }
 
-            let prefix = String(lineNorm.prefix(normVoice.count))
+            let prefix = String(lineNorm.prefix(normVoice.count + 2))
             let score = normVoice.similarity(to: prefix)
 
             if score > bestScore {
                 bestScore = score
                 bestIndex = index
             }
-
-            if score > 0.8 { break }
+            if score > 0.9 { break }
         }
 
         if let bestIndex {
@@ -214,13 +174,13 @@ class QuranViewModel {
 
     private func tryBackwardMatch(
         _ index: inout Int,
-        _ voice: String,
+        _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
         for step in 1...3 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voice.similarity(to: qWord.normalizedArabic) >= matchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= matchThreshold {
                 index -= step
                 results.removeLast(step)
                 results.append((qWord, true))
@@ -257,7 +217,7 @@ class QuranViewModel {
         guard isRecording else { return }
 
         var results = matchedWords
-        var quranWordsIndex = matchedWords.count
+        let quranWordsIndex = matchedWords.count
 
         if quranWordsIndex + 2 < quranWords.count {
             results.append((quranWords[quranWordsIndex], false))
