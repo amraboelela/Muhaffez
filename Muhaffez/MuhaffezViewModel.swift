@@ -42,8 +42,16 @@ class MuhaffezViewModel {
     var quranWords = [String]()
     var voiceWords = [String]()
     var voicePageNumber = 1
-    var rightPageText = AttributedString()
-    var leftPageText = AttributedString()
+    var rightPageText = AttributedString() {
+        didSet {
+            print("rightPageText: \(String(rightPageText.characters))")
+        }
+    }
+    var leftPageText = AttributedString() {
+        didSet {
+            print("leftPageText: \(String(leftPageText.characters))")
+        }
+    }
 
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers

@@ -242,4 +242,13 @@ class QuranModel {
         let page = pageNumber(forAyahIndex: index)
         return page % 2 == 1
     }
+
+    /// Helper: true if current ayah index is at the end of a rub3
+    func isEndOfRub3(_ ayahIndex: Int) -> Bool {
+        return rub3Markers.contains(ayahIndex + 1) // markers are 1-based usually
+    }
+
+    func isEndOfSurah(_ ayahIndex: Int) -> Bool {
+        return surahMarkers.contains(ayahIndex) // markers are 1-based usually
+    }
 }

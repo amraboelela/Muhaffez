@@ -17,6 +17,7 @@ extension MuhaffezViewModel {
 
         guard let firstIndex = foundAyat.first else { return }
 
+        let quranModel = QuranModel.shared
         var currentLineIndex = firstIndex
         var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
         var wordIndexInLine = 0
@@ -27,50 +28,42 @@ extension MuhaffezViewModel {
             wordIndexInLine = 0
         }
 
+        func add(separator: AttributedString) {
+            if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+                rightPageText += separator
+            } else {
+                leftPageText += separator
+            }
+        }
+
         for (index, (word, isMatched)) in matchedWords.enumerated() {
             let attributedWord = attributedWord(for: word, matched: isMatched)
 
             // Append directly to the correct page
-            if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+            if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
                 rightPageText += attributedWord
             } else {
                 leftPageText += attributedWord
             }
 
             wordIndexInLine += 1
-
-            // Add separators if needed
-            if isEndOfSurah(currentLineIndex) {
-                let separator = addSurahSeparator(ayaIndex: currentLineIndex + 1)
-                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
-                    rightPageText += separator
-                } else {
-                    leftPageText += separator
-                }
-                advanceLine()
-            } else if isEndOfRub3(currentLineIndex) {
-                let separator = addRub3Separator()
-                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
-                    rightPageText += separator
-                } else {
-                    leftPageText += separator
-                }
-                advanceLine()
+            if index < matchedWords.count - 1 {
+                add(separator: " ")
+            }
+            var needToAdvanceLine = false
+            if quranModel.isEndOfSurah(currentLineIndex) {
+                add(separator: surahSeparator(ayaIndex: currentLineIndex + 1))
+                needToAdvanceLine = true
+            }
+            if quranModel.isEndOfRub3(currentLineIndex) {
+                add(separator: AttributedString("⭐ "))
+                needToAdvanceLine = true
             } else if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
-                let separator = addAyahSeparator()
-                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
-                    rightPageText += separator
-                } else {
-                    leftPageText += separator
-                }
+                add(separator: AttributedString("🌼 "))
+                needToAdvanceLine = true
+            }
+            if needToAdvanceLine {
                 advanceLine()
-            } else if index < matchedWords.count - 1 {
-                let space = addSpace()
-                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
-                    rightPageText += space
-                } else {
-                    leftPageText += space
-                }
             }
         }
     }
@@ -93,29 +86,13 @@ extension MuhaffezViewModel {
         return wordIndex >= wordCount
     }
 
-    /// Helper: true if current ayah index is at the end of a rub3
-    private func isEndOfRub3(_ ayahIndex: Int) -> Bool {
-        return rub3Markers.contains(ayahIndex + 1) // markers are 1-based usually
-    }
-
-    private func isEndOfSurah(_ ayahIndex: Int) -> Bool {
-        return surahMarkers.contains(ayahIndex + 1) // markers are 1-based usually
-    }
-
-    private func addAyahSeparator() -> AttributedString {
-        return AttributedString(" 🌼 ")
-    }
-
-    private func addRub3Separator() -> AttributedString {
-        return AttributedString(" ⭐ ")
-    }
-
-    private func addSurahSeparator(ayaIndex: Int) -> AttributedString {
-        return AttributedString("\n\n────────── \(QuranModel.shared.surahName(forAyahIndex: ayaIndex))  ──────────\n\n")
-    }
-
-    private func addSpace() -> AttributedString {
-        return AttributedString(" ")
+    private func surahSeparator(ayaIndex: Int) -> AttributedString {
+        let surahName = QuranModel.shared.surahName(forAyahIndex: ayaIndex)
+        let separator = AttributedString("\n──────────\n")
+        var name = AttributedString("سورة \(surahName)")
+        name.font = .system(size: 20, weight: .bold)
+        let separator2 = AttributedString("\n──────────\n")
+        return separator + name + separator2
     }
 }
 

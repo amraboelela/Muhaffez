@@ -66,6 +66,7 @@ struct QuranModelTests {
 
         // Test ayah indices on different pages
         #expect(model.pageNumber(forAyahIndex: 0) == 1)   // Page 1
+        #expect(model.pageNumber(forAyahIndex: 6) == 1)   // Page 1
         #expect(model.pageNumber(forAyahIndex: 7) == 2)   // Page 2
         #expect(model.pageNumber(forAyahIndex: 12) == 3)  // Page 3
         #expect(model.pageNumber(forAyahIndex: 17) == 3)  // Page 4
@@ -198,5 +199,26 @@ struct QuranModelTests {
         // 5. Out-of-bounds too large index
         let tooLargeIndexSurah = model.surahName(forAyahIndex: model.quranLines.count)
         #expect(tooLargeIndexSurah.isEmpty)
+    }
+
+    @Test
+    func testIsEndOfSurah() async throws {
+        // Arrange: A fake QuranModel with some markers
+        let model = QuranModel.shared
+
+        // Act & Assert
+        #expect(!model.isEndOfSurah(6))
+        #expect(model.isEndOfSurah(7))
+        #expect(!model.isEndOfSurah(21))
+    }
+
+    @Test
+    func testIsEndOfRub3() async throws {
+        // Arrange: A fake QuranModel with some markers
+        let model = QuranModel.shared
+
+        // Act & Assert
+        #expect(!model.isEndOfRub3(6))
+        #expect(!model.isEndOfRub3(21))
     }
 }

@@ -60,8 +60,7 @@ struct MuhaffezViewModelTwoPagesTests {
         #expect(string.contains("─"))
         #expect(string.contains("القارعة"))
         
-        // The ayah separator "🌼" should also be present
-        #expect(string.contains("🌼"))
+        #expect(string.contains("⭐"))
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
 
