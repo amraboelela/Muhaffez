@@ -14,6 +14,7 @@ class QuranModel {
     let quranLines: [String]
     let pageMarkers: [Int]
     let rub3Markers: [Int]
+    let surahMarkers: [Int]
     let surahs: [(startPage: Int, name: String)] = [
         (1, "الفاتحة"),
         (2, "البقرة"),
@@ -135,6 +136,7 @@ class QuranModel {
         var lines = [String]()
         var pageMarkers = [Int]()
         var rub3Markers = [Int]()
+        var surahMarkers = [Int]()
 
         if let path = Bundle.main.path(forResource: "quran-simple-min", ofType: "txt") {
             do {
@@ -147,6 +149,8 @@ class QuranModel {
                         pageMarkers.append(ayaCount)
                     } else if line == "*" {
                         rub3Markers.append(ayaCount)
+                    } else if line == "-" {
+                        surahMarkers.append(ayaCount)
                     } else {
                         lines.append(line)
                         ayaCount += 1
@@ -162,6 +166,7 @@ class QuranModel {
         self.quranLines = lines
         self.pageMarkers = pageMarkers
         self.rub3Markers = rub3Markers
+        self.surahMarkers = surahMarkers
     }
 
     /// Returns the page number for the given ayah index
@@ -213,5 +218,23 @@ class QuranModel {
             }
         }
         return ""
+    }
+
+    /// Returns the surah name for a given ayah index in quranLines
+    func surahName(forAyahIndex ayahIndex: Int) -> String {
+        guard !surahMarkers.isEmpty, ayahIndex >= 0, ayahIndex < quranLines.count else {
+            return ""
+        }
+        
+        // Find the last marker that is <= ayahIndex
+        for i in (0..<surahMarkers.count).reversed() {
+            if ayahIndex >= surahMarkers[i] {
+                // Return the corresponding surah name from surahs array
+                // Note: assuming surahMarkers and surahs are in sync
+                return surahs[i+1].name
+            }
+        }
+        
+        return surahs[0].name
     }
 }

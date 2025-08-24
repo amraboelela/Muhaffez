@@ -13,28 +13,37 @@ extension MuhaffezViewModel {
 
     var displayText: AttributedString {
         guard let firstIndex = foundAyat.first else { return AttributedString("") }
+
         var result = AttributedString()
         var currentLineIndex = firstIndex
         var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
-        var wordCountInLine = wordsInCurrentLine.count
         var wordIndexInLine = 0
+
+        func advanceLine() {
+            currentLineIndex += 1
+            wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
+            wordIndexInLine = 0
+        }
+
         for (index, (word, isMatched)) in matchedWords.enumerated() {
             result += attributedWord(for: word, matched: isMatched)
             wordIndexInLine += 1
-            if isEndOfAya(wordIndexInLine, wordCountInLine) {
+
+            // Decide what separator to add, if any
+            if isEndOfSurah(currentLineIndex) {
+                result += addSurahSeparator(ayaIndex: currentLineIndex + 1)
+                advanceLine()
+            } else if isEndOfRub3(currentLineIndex) {
+                result += addRub3Separator()
+                advanceLine()
+            } else if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
                 result += addAyahSeparator()
-                // If the ayah is at the end of a rub3, add rub3 separator
-                if isEndOfRub3(currentLineIndex) {
-                    result += addRub3Separator()
-                }
-                currentLineIndex += 1
-                wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
-                wordCountInLine = wordsInCurrentLine.count
-                wordIndexInLine = 0
+                advanceLine()
             } else if index < matchedWords.count - 1 {
                 result += addSpace()
             }
         }
+
         return result
     }
 
@@ -60,13 +69,21 @@ extension MuhaffezViewModel {
     private func isEndOfRub3(_ ayahIndex: Int) -> Bool {
         return rub3Markers.contains(ayahIndex + 1) // markers are 1-based usually
     }
-    
+
+    private func isEndOfSurah(_ ayahIndex: Int) -> Bool {
+        return surahMarkers.contains(ayahIndex + 1) // markers are 1-based usually
+    }
+
     private func addAyahSeparator() -> AttributedString {
         return AttributedString(" 🌼 ")
     }
 
     private func addRub3Separator() -> AttributedString {
         return AttributedString(" ⭐ ")
+    }
+
+    private func addSurahSeparator(ayaIndex: Int) -> AttributedString {
+        return AttributedString("\n\n────────── \(QuranModel.shared.surahName(forAyahIndex: ayaIndex))  ──────────\n\n")
     }
 
     private func addSpace() -> AttributedString {

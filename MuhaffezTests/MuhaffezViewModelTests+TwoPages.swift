@@ -56,9 +56,10 @@ struct MuhaffezViewModelTwoPagesTests {
         var string = String(attributed.characters)
 
         // Assert
-        // The rub3 separator "⭐" should appear because ayah at index 1 ends a rub3
-        #expect(string.contains("⭐"))
-
+        // The rub3 separator "─" should appear because ayah at index 1 ends a rub3
+        #expect(string.contains("─"))
+        #expect(string.contains("القارعة"))
+        
         // The ayah separator "🌼" should also be present
         #expect(string.contains("🌼"))
 
@@ -66,7 +67,7 @@ struct MuhaffezViewModelTwoPagesTests {
 
         attributed = viewModel.displayText
         string = String(viewModel.displayText.characters)
-        #expect(string.contains("⭐"))
+        #expect(string.contains("─"))
         #expect(string.contains("🌼"))
         viewModel.isRecording = true
         // Testing the peek feature after 3 seconds

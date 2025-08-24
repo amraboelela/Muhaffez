@@ -42,6 +42,7 @@ class MuhaffezViewModel {
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers
     let rub3Markers = QuranModel.shared.rub3Markers
+    let surahMarkers = QuranModel.shared.surahMarkers
 
     // MARK: - Private Properties
 

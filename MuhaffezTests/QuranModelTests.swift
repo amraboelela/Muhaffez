@@ -173,4 +173,30 @@ struct QuranModelTests {
         let lastSurahName = model.surahName(forPage: 1000)
         #expect(lastSurahName == "الناس")
     }
+
+    @Test func testSurahNameForAyahIndex() {
+        let model = QuranModel.shared
+
+        // 1. First ayah should be in Al-Fatihah
+        let firstAyahSurah = model.surahName(forAyahIndex: 0)
+        #expect(firstAyahSurah == "الفاتحة")
+
+        // 2. Some ayah in the middle of آل عمران
+        let middleBaqarahIndex = model.surahMarkers[1] + 10 // second surah start + offset
+        let middleBaqarahSurah = model.surahName(forAyahIndex: middleBaqarahIndex)
+        #expect(middleBaqarahSurah == "آل عمران")
+
+        // 3. Last ayah should correspond to last surah
+        let lastAyahIndex = model.quranLines.count - 1
+        let lastSurah = model.surahName(forAyahIndex: lastAyahIndex)
+        #expect(lastSurah == "الناس")
+
+        // 4. Out-of-bounds negative index
+        let negativeIndexSurah = model.surahName(forAyahIndex: -1)
+        #expect(negativeIndexSurah.isEmpty)
+
+        // 5. Out-of-bounds too large index
+        let tooLargeIndexSurah = model.surahName(forAyahIndex: model.quranLines.count)
+        #expect(tooLargeIndexSurah.isEmpty)
+    }
 }
