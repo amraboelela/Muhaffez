@@ -24,6 +24,9 @@ struct MuhaffezView: View {
                         Spacer()
                     }
                 } else {
+                    if viewModel.voicePageNumber == 1 {
+                        Spacer()
+                    }
                     Text(viewModel.displayText)
                         .environment(\.layoutDirection, .rightToLeft)
                         .padding()
@@ -62,6 +65,7 @@ struct MuhaffezView: View {
 //            viewModel.voiceText = "123"
 
             // Use this for testing
+//            viewModel.voicePageNumber = 1
 //            viewModel.foundAyat = [10]
 //            viewModel.matchedWords = [("Verily", true), ("Allah", true), ("order", true), ("you", true), ("to", false), ("fullfill", true), ("the", false), ("deeds", true), ("of", false), ("your", false), ("parents", true), ("with", false), ("mercies", true), ("from", false), ("your", false), ("Lord", true), (".", false) ]
         }

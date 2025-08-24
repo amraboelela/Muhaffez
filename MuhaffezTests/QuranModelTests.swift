@@ -130,4 +130,47 @@ struct QuranModelTests {
         #expect(model.juz2Number(forAyahIndex: ninthRub3) == 2)
     }
 
+    @Test func testSurahNameValidPages() {
+        let model = QuranModel.shared
+
+        // Test a page in the middle of Surah Al-Baqara
+        let page49Surah = model.surahName(forPage: 49)
+        #expect(page49Surah == "البقرة")
+
+        // Test first page → should be Al-Fatiha
+        let firstPageSurah = model.surahName(forPage: 1)
+        #expect(firstPageSurah == "الفاتحة")
+
+        // Test last page → should return the last surah
+        let lastPage = 604 // Madinah Mushaf last page
+        let lastSurah = model.surahName(forPage: lastPage)
+        #expect(lastSurah == "الناس")
+    }
+
+    @Test func testSurahNameInvalidPage() {
+        let model = QuranModel.shared
+
+        // Page 0 is invalid → should return empty string
+        let zeroPage = model.surahName(forPage: 0)
+        #expect(zeroPage == "")
+
+        // Negative page → should return empty string
+        let negativePage = model.surahName(forPage: -5)
+        #expect(negativePage == "")
+    }
+
+    @Test func testSurahNameEdgeCases() {
+        let model = QuranModel.shared
+
+        // Page exactly at the start of a surah
+        let nameOfSurah3 = model.surahName(forPage: model.surahs[2].startPage)
+        #expect(nameOfSurah3 == "آل عمران")
+
+        // Page just before the start of the next surah
+        let nameBeforeNextSurah = model.surahName(forPage: model.surahs[3].startPage - 1)
+        #expect(nameBeforeNextSurah == "آل عمران")
+
+        let lastSurahName = model.surahName(forPage: 1000)
+        #expect(lastSurahName == "الناس")
+    }
 }
