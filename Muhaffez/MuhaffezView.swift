@@ -24,18 +24,9 @@ struct MuhaffezView: View {
                         Spacer()
                     }
                 } else {
-                    if viewModel.voicePageNumber == 1 {
-                        Spacer()
-                    }
-                    Text(viewModel.rightPageText)
-                        .environment(\.layoutDirection, .rightToLeft)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    TwoPagesView(viewModel: viewModel)
                 }
-                Spacer()
             }
-            .border(Color.gray)
-            .padding()
             Button(action: {
                 if viewModel.isRecording {
                     recognizer.stopRecording()
@@ -49,7 +40,7 @@ struct MuhaffezView: View {
                 viewModel.isRecording.toggle()
             }) {
                 Image(systemName: viewModel.isRecording ? "mic.fill" : "mic")
-                    .font(.system(size: 40))
+                    .font(.system(size: 25))
                     .foregroundColor(viewModel.isRecording ? .red : .blue)
                     .padding()
                     .background(Circle().fill(Color(.systemGray6)))

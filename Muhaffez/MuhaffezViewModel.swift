@@ -28,7 +28,7 @@ class MuhaffezViewModel {
     var isRecording = false
     var matchedWords: [(String, Bool)] = [] {
         didSet {
-            updatePageTexts()
+            updatePages()
         }
     }
     var foundAyat = [Int]()
@@ -41,15 +41,25 @@ class MuhaffezViewModel {
 
     var quranWords = [String]()
     var voiceWords = [String]()
-    var voicePageNumber = 1
-    var rightPageText = AttributedString() {
+    var rightPage = PageModel() {
         didSet {
-            print("rightPageText: \(String(rightPageText.characters))")
+            print("rightPage: \(rightPage)")
         }
     }
-    var leftPageText = AttributedString() {
+    var leftPage = PageModel() {
         didSet {
-            print("leftPageText: \(String(leftPageText.characters))")
+            print("leftPage: \(rightPage)")
+        }
+    }
+    var voicePageNumber = 0
+    var currentPageIsRight: Bool? {
+        didSet {
+            voicePageNumber += 1
+            if let currentPageIsRight, currentPageIsRight {
+                withAnimation {
+                    leftPage.reset()
+                }
+            }
         }
     }
 
@@ -72,6 +82,10 @@ class MuhaffezViewModel {
         quranText = ""
         matchedWords = []
         voiceText = ""
+        voicePageNumber = 0
+        currentPageIsRight = nil
+        rightPage.reset()
+        leftPage.reset()
     }
 
     // MARK: - Aya Matching

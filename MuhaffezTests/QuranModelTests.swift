@@ -120,15 +120,15 @@ struct QuranModelTests {
 
         // Each juz = 8 rub3
         if let firstRub3 = model.rub3Markers.first {
-            #expect(model.juz2Number(forAyahIndex: firstRub3) == 1)
+            #expect(model.juzNumber(forAyahIndex: firstRub3) == 1)
         }
 
         let fifthRub3 = model.rub3Markers[4]
-        #expect(model.juz2Number(forAyahIndex: fifthRub3) == 1)
+        #expect(model.juzNumber(forAyahIndex: fifthRub3) == 1)
         let eighthRub3 = model.rub3Markers[7]
-        #expect(model.juz2Number(forAyahIndex: eighthRub3) == 2)
+        #expect(model.juzNumber(forAyahIndex: eighthRub3) == 2)
         let ninthRub3 = model.rub3Markers[8]
-        #expect(model.juz2Number(forAyahIndex: ninthRub3) == 2)
+        #expect(model.juzNumber(forAyahIndex: ninthRub3) == 2)
     }
 
     @Test func testSurahNameValidPages() {
@@ -220,5 +220,32 @@ struct QuranModelTests {
         // Act & Assert
         #expect(!model.isEndOfRub3(6))
         #expect(!model.isEndOfRub3(21))
+    }
+
+
+    @Test("Fills right page when ayah is on right page")
+    func testFillRightPage() {
+        let viewModel = MuhaffezViewModel()
+        let ayahIndex = 1
+        let quranModel = QuranModel.shared
+
+        quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: ayahIndex)
+
+        #expect(viewModel.rightPage.juzNumber == 1)
+        #expect(viewModel.rightPage.surahName == "الفاتحة")
+        #expect(viewModel.rightPage.pageNumber == 1)
+    }
+
+    @Test("Fills left page when ayah is on left page")
+    func testFillLeftPage() {
+        let viewModel = MuhaffezViewModel()
+        let ayahIndex = 10
+        let quranModel = QuranModel.shared
+
+        quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: ayahIndex)
+
+        #expect(viewModel.leftPage.juzNumber == 1)
+        #expect(viewModel.leftPage.surahName == "البقرة")
+        #expect(viewModel.leftPage.pageNumber == 2)
     }
 }

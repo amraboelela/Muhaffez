@@ -5,7 +5,7 @@
 //  Created by Amr Aboelela on 8/22/25.
 //
 
-import Foundation
+import SwiftUI
 
 @MainActor
 class QuranModel {
@@ -204,7 +204,7 @@ class QuranModel {
     }
 
     /// Returns the juz number for the given ayah index
-    func juz2Number(forAyahIndex index: Int) -> Int {
+    func juzNumber(forAyahIndex index: Int) -> Int {
         let rub3Num = rub3Number(forAyahIndex: index)
         // Each juz = 4 rub3 → use ceil to handle partials correctly
         return Int(ceil(Double(rub3Num) / 8.0))
@@ -241,6 +241,28 @@ class QuranModel {
     func isRightPage(forAyahIndex index: Int) -> Bool {
         let page = pageNumber(forAyahIndex: index)
         return page % 2 == 1
+    }
+
+    func updatePageModels(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
+        withAnimation {
+            if isRightPage(forAyahIndex: index) {
+                viewModel.rightPage.juzNumber = juzNumber(forAyahIndex: index)
+                viewModel.rightPage.surahName = surahName(forAyahIndex: index)
+                viewModel.rightPage.pageNumber = pageNumber(forAyahIndex: index)
+            } else {
+                viewModel.leftPage.juzNumber = juzNumber(forAyahIndex: index)
+                viewModel.leftPage.surahName = surahName(forAyahIndex: index)
+                viewModel.leftPage.pageNumber = pageNumber(forAyahIndex: index)
+            }
+            viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)
+        }
+    }
+
+    func updatePageModelsIfNeeded(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
+        if viewModel.currentPageIsRight == nil ||
+            viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
+            updatePageModels(viewModel: viewModel, ayahIndex: index)
+        }
     }
 
     /// Helper: true if current ayah index is at the end of a rub3

@@ -11,9 +11,9 @@ extension MuhaffezViewModel {
 
     // MARK: - Computed Properties
 
-    func updatePageTexts() {
-        rightPageText = AttributedString()
-        leftPageText = AttributedString()
+    func updatePages() {
+        rightPage.text = AttributedString()
+        leftPage.text = AttributedString()
 
         guard let firstIndex = foundAyat.first else { return }
 
@@ -30,22 +30,21 @@ extension MuhaffezViewModel {
 
         func add(separator: AttributedString) {
             if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-                rightPageText += separator
+                rightPage.text += separator
             } else {
-                leftPageText += separator
+                leftPage.text += separator
             }
         }
-
+        
         for (index, (word, isMatched)) in matchedWords.enumerated() {
+            quranModel.updatePageModelsIfNeeded(viewModel: self, ayahIndex: currentLineIndex)
             let attributedWord = attributedWord(for: word, matched: isMatched)
-
             // Append directly to the correct page
             if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-                rightPageText += attributedWord
+                rightPage.text += attributedWord
             } else {
-                leftPageText += attributedWord
+                leftPage.text += attributedWord
             }
-
             wordIndexInLine += 1
             if index < matchedWords.count - 1 {
                 add(separator: " ")

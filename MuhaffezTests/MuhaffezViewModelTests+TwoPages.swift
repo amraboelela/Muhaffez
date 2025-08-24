@@ -20,7 +20,7 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.matchedWords = [("Bismillah", true), ("Rahman", false)]
 
         // When
-        let text = viewModel.rightPageText
+        let text = viewModel.rightPage.text
 
         // Then
         let plainText = String(text.characters)
@@ -35,7 +35,7 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
 
         // When
-        let result = viewModel.leftPageText
+        let result = viewModel.leftPage.text
 
         // Then
         #expect(result.characters.contains { $0 == "🌼" }) // at least one separator
@@ -52,7 +52,7 @@ struct MuhaffezViewModelTwoPagesTests {
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
-        var attributed = viewModel.leftPageText
+        var attributed = viewModel.leftPage.text
         var string = String(attributed.characters)
 
         // Assert
@@ -64,29 +64,29 @@ struct MuhaffezViewModelTwoPagesTests {
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
 
-        attributed = viewModel.leftPageText
-        string = String(viewModel.leftPageText.characters)
+        attributed = viewModel.leftPage.text
+        string = String(viewModel.leftPage.text.characters)
         #expect(string.contains("─"))
         #expect(string.contains("🌼"))
         viewModel.isRecording = true
         // Testing the peek feature after 3 seconds
-        while viewModel.leftPageText.characters.count == attributed.characters.count {
+        while viewModel.leftPage.text.characters.count == attributed.characters.count {
             try await Task.sleep(for: .seconds(1))
         }
-        #expect(viewModel.leftPageText.characters.count > attributed.characters.count)
-        string = String(viewModel.leftPageText.characters)
+        #expect(viewModel.leftPage.text.characters.count > attributed.characters.count)
+        string = String(viewModel.leftPage.text.characters)
         print("string: \(string)")
         #expect(string.contains("مَا"))
 
         viewModel.resetData()
         viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
-        string = String(viewModel.rightPageText.characters)
+        string = String(viewModel.rightPage.text.characters)
         #expect(string.contains("⭐"))
 
         viewModel.resetData()
         viewModel.voiceText = "نحن جعلناها تذكرة"
         viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
-        string = String(viewModel.leftPageText.characters)
+        string = String(viewModel.leftPage.text.characters)
         #expect(string.contains("⭐"))
     }
 }
