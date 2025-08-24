@@ -133,6 +133,16 @@ struct MuhaffezViewModelTests {
         var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(viewModel.foundAyat.count == 0)
 
+        viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الحَمدُ لِلَّهِ رَبِّ العالَمينَ"
+        matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
+        print("matchedWords: \(viewModel.matchedWords)")
+        print("matchedTrues: \(matchedTrues)")
+        print("viewModel.foundAyat: \(viewModel.foundAyat)")
+        print("quranLines[viewModel.foundAyat.first!]: \(quranLines[viewModel.foundAyat.first!])")
+        #expect(viewModel.foundAyat.count == 1)
+        #expect(viewModel.foundAyat.first! == 1)
+
+        viewModel.resetData()
         viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
         matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         print("matchedWords: \(viewModel.matchedWords)")

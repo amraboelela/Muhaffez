@@ -34,14 +34,12 @@ struct MuhaffezViewModelTwoPagesTests {
         let viewModel = MuhaffezViewModel()
         viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
 
-        // When
-        let result = viewModel.leftPage.text
+        let result = viewModel.leftPage.textString
 
-        // Then
-        #expect(result.characters.contains { $0 == "🌼" }) // at least one separator
-        let plainText = String(result.characters)
-        #expect(plainText.contains("الكِتابُ"))
-        #expect(plainText.contains("لِلمُتَّقينَ"))
+        print("result: \(result)")
+        #expect(result.contains("سورة البقرة"))
+        #expect(result.contains("الكِتابُ"))
+        #expect(result.contains("لِلمُتَّقينَ"))
     }
 
     @Test func testColoredFromMatched_addsRub3Separator() async throws {
@@ -52,41 +50,40 @@ struct MuhaffezViewModelTwoPagesTests {
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
-        var attributed = viewModel.leftPage.text
-        var string = String(attributed.characters)
+        //var attributed = viewModel.leftPage.text
+        var textString = viewModel.leftPage.textString
 
         // Assert
         // The rub3 separator "─" should appear because ayah at index 1 ends a rub3
-        #expect(string.contains("─"))
-        #expect(string.contains("القارعة"))
-        
-        #expect(string.contains("⭐"))
+        #expect(textString.contains("─"))
+        #expect(textString.contains("القارعة"))
+
+        #expect(textString.contains("⭐"))
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
 
-        attributed = viewModel.leftPage.text
-        string = String(viewModel.leftPage.text.characters)
-        #expect(string.contains("─"))
-        #expect(string.contains("🌼"))
+        textString = viewModel.leftPage.textString
+        #expect(textString.contains("─"))
+        #expect(textString.contains("🌼"))
         viewModel.isRecording = true
         // Testing the peek feature after 3 seconds
-        while viewModel.leftPage.text.characters.count == attributed.characters.count {
+        while viewModel.leftPage.textString.count == textString.count {
             try await Task.sleep(for: .seconds(1))
         }
-        #expect(viewModel.leftPage.text.characters.count > attributed.characters.count)
-        string = String(viewModel.leftPage.text.characters)
-        print("string: \(string)")
-        #expect(string.contains("مَا"))
+        #expect(viewModel.leftPage.textString.count > textString.count)
+        textString = viewModel.leftPage.textString
+        print("textString: \(textString)")
+        #expect(textString.contains("مَا"))
 
         viewModel.resetData()
         viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
-        string = String(viewModel.rightPage.text.characters)
-        #expect(string.contains("⭐"))
+        textString = viewModel.rightPage.textString
+        #expect(textString.contains("⭐"))
 
         viewModel.resetData()
         viewModel.voiceText = "نحن جعلناها تذكرة"
         viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
-        string = String(viewModel.leftPage.text.characters)
-        #expect(string.contains("⭐"))
+        textString = viewModel.leftPage.textString
+        #expect(textString.contains("⭐"))
     }
 }

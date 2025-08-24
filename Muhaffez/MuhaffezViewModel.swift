@@ -17,7 +17,7 @@ class MuhaffezViewModel {
 
     var voiceText = "" {
         didSet {
-            voiceWords = voiceText.split(separator: " ").map { String($0) }
+            voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
             if !voiceText.isEmpty {
                 updateFoundAyat()
                 updateMatchedWords()
@@ -103,7 +103,7 @@ class MuhaffezViewModel {
                 foundAyat.append(index)
             }
         }
-
+        
         // Fallback with debounce if no matches
         if foundAyat.isEmpty {
             debounceTimer?.invalidate()
@@ -172,10 +172,10 @@ class MuhaffezViewModel {
             quranWordsIndex += 1
             guard quranWordsIndex < quranWords.count else { break }
 
-            let normVoiceWord = voiceWord.normalizedArabic
+            //let normVoiceWord = voiceWord.normalizedArabic
             let qWord = quranWords[quranWordsIndex]
             let normQWord = qWord.normalizedArabic
-            let score = normVoiceWord.similarity(to: normQWord)
+            let score = voiceWord.similarity(to: normQWord)
 
             // Direct match
             if score >= matchThreshold {
@@ -184,8 +184,8 @@ class MuhaffezViewModel {
             }
 
             // Try backward and forward search
-            if tryBackwardMatch(&quranWordsIndex, normVoiceWord, &results) { continue }
-            if tryForwardMatch(&quranWordsIndex, normVoiceWord, &results) { continue }
+            if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
+            if tryForwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
 
             results.append((quranWords[quranWordsIndex], false))
         }

@@ -13,6 +13,9 @@ struct PageModel {
     var pageNumber = 0
     var text = AttributedString()
 
+    var textString: String {
+        String(text.characters)
+    }
     mutating func reset() {
         juzNumber = 0
         surahName = ""
