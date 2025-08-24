@@ -27,7 +27,7 @@ struct MuhaffezView: View {
                     if viewModel.voicePageNumber == 1 {
                         Spacer()
                     }
-                    Text(viewModel.displayText)
+                    Text(viewModel.rightPageText)
                         .environment(\.layoutDirection, .rightToLeft)
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)

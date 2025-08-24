@@ -26,7 +26,11 @@ class MuhaffezViewModel {
     }
 
     var isRecording = false
-    var matchedWords: [(String, Bool)] = []
+    var matchedWords: [(String, Bool)] = [] {
+        didSet {
+            updatePageTexts()
+        }
+    }
     var foundAyat = [Int]()
 
     var quranText = "" {
@@ -38,6 +42,8 @@ class MuhaffezViewModel {
     var quranWords = [String]()
     var voiceWords = [String]()
     var voicePageNumber = 1
+    var rightPageText = AttributedString()
+    var leftPageText = AttributedString()
 
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers

@@ -237,4 +237,9 @@ class QuranModel {
         
         return surahs[0].name
     }
+
+    func isRightPage(forAyahIndex index: Int) -> Bool {
+        let page = pageNumber(forAyahIndex: index)
+        return page % 2 == 1
+    }
 }

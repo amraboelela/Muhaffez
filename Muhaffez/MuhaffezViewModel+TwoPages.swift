@@ -11,10 +11,12 @@ extension MuhaffezViewModel {
 
     // MARK: - Computed Properties
 
-    var displayText: AttributedString {
-        guard let firstIndex = foundAyat.first else { return AttributedString("") }
+    func updatePageTexts() {
+        rightPageText = AttributedString()
+        leftPageText = AttributedString()
 
-        var result = AttributedString()
+        guard let firstIndex = foundAyat.first else { return }
+
         var currentLineIndex = firstIndex
         var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
         var wordIndexInLine = 0
@@ -26,25 +28,51 @@ extension MuhaffezViewModel {
         }
 
         for (index, (word, isMatched)) in matchedWords.enumerated() {
-            result += attributedWord(for: word, matched: isMatched)
+            let attributedWord = attributedWord(for: word, matched: isMatched)
+
+            // Append directly to the correct page
+            if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+                rightPageText += attributedWord
+            } else {
+                leftPageText += attributedWord
+            }
+
             wordIndexInLine += 1
 
-            // Decide what separator to add, if any
+            // Add separators if needed
             if isEndOfSurah(currentLineIndex) {
-                result += addSurahSeparator(ayaIndex: currentLineIndex + 1)
+                let separator = addSurahSeparator(ayaIndex: currentLineIndex + 1)
+                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+                    rightPageText += separator
+                } else {
+                    leftPageText += separator
+                }
                 advanceLine()
             } else if isEndOfRub3(currentLineIndex) {
-                result += addRub3Separator()
+                let separator = addRub3Separator()
+                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+                    rightPageText += separator
+                } else {
+                    leftPageText += separator
+                }
                 advanceLine()
             } else if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
-                result += addAyahSeparator()
+                let separator = addAyahSeparator()
+                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+                    rightPageText += separator
+                } else {
+                    leftPageText += separator
+                }
                 advanceLine()
             } else if index < matchedWords.count - 1 {
-                result += addSpace()
+                let space = addSpace()
+                if QuranModel.shared.isRightPage(forAyahIndex: currentLineIndex) {
+                    rightPageText += space
+                } else {
+                    leftPageText += space
+                }
             }
         }
-
-        return result
     }
 
     // MARK: - Helpers

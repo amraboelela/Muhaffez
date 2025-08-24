@@ -20,7 +20,7 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.matchedWords = [("Bismillah", true), ("Rahman", false)]
 
         // When
-        let text = viewModel.displayText
+        let text = viewModel.rightPageText
 
         // Then
         let plainText = String(text.characters)
@@ -35,7 +35,7 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
 
         // When
-        let result = viewModel.displayText
+        let result = viewModel.leftPageText
 
         // Then
         #expect(result.characters.contains { $0 == "🌼" }) // at least one separator
@@ -52,7 +52,7 @@ struct MuhaffezViewModelTwoPagesTests {
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
-        var attributed = viewModel.displayText
+        var attributed = viewModel.leftPageText
         var string = String(attributed.characters)
 
         // Assert
@@ -65,18 +65,18 @@ struct MuhaffezViewModelTwoPagesTests {
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
 
-        attributed = viewModel.displayText
-        string = String(viewModel.displayText.characters)
+        attributed = viewModel.leftPageText
+        string = String(viewModel.leftPageText.characters)
         #expect(string.contains("─"))
         #expect(string.contains("🌼"))
         viewModel.isRecording = true
         // Testing the peek feature after 3 seconds
-        while viewModel.displayText.characters.count == attributed.characters.count {
+        while viewModel.leftPageText.characters.count == attributed.characters.count {
             try await Task.sleep(for: .seconds(1))
         }
-        #expect(viewModel.displayText.characters.count > attributed.characters.count)
-        attributed = viewModel.displayText
-        string = String(viewModel.displayText.characters)
+        #expect(viewModel.leftPageText.characters.count > attributed.characters.count)
+        attributed = viewModel.leftPageText
+        string = String(viewModel.leftPageText.characters)
         print("string: \(string)")
         #expect(string.contains("مَا"))
     }
