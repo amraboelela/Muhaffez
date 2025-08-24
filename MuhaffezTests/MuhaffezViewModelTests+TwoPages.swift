@@ -75,10 +75,19 @@ struct MuhaffezViewModelTwoPagesTests {
             try await Task.sleep(for: .seconds(1))
         }
         #expect(viewModel.leftPageText.characters.count > attributed.characters.count)
-        attributed = viewModel.leftPageText
         string = String(viewModel.leftPageText.characters)
         print("string: \(string)")
         #expect(string.contains("مَا"))
-    }
 
+        viewModel.resetData()
+        viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
+        string = String(viewModel.rightPageText.characters)
+        #expect(string.contains("⭐"))
+
+        viewModel.resetData()
+        viewModel.voiceText = "نحن جعلناها تذكرة"
+        viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
+        string = String(viewModel.leftPageText.characters)
+        #expect(string.contains("⭐"))
+    }
 }
