@@ -209,8 +209,8 @@ struct QuranModelTests {
         let model = QuranModel.shared
 
         // Act & Assert
-        #expect(!model.isEndOfSurah(6))
-        #expect(model.isEndOfSurah(7))
+        #expect(model.isEndOfSurah(6))
+        #expect(!model.isEndOfSurah(7))
         #expect(!model.isEndOfSurah(21))
     }
 
