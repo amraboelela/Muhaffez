@@ -176,7 +176,7 @@ class QuranModel {
 
         // Find the first marker greater than the index → that's the next page start
         for (pageIndex, marker) in pageMarkers.enumerated() {
-            if index < marker {
+            if index <= marker {
                 return pageIndex + 1 // Pages are usually 1-based
             }
         }

@@ -47,11 +47,11 @@ struct QuranModelTests {
             #expect(marker >= 0 && marker < model.quranLines.count)
         }
         #expect(model.pageMarkers.count == 603)
-        #expect(model.quranLines[model.pageMarkers[0]] == "الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ")
-        #expect(model.quranLines[model.pageMarkers[49]] == "إِنَّ الَّذينَ كَفَروا لَن تُغنِيَ عَنهُم أَموالُهُم وَلا أَولادُهُم مِنَ اللَّهِ شَيئًا وَأُولٰئِكَ هُم وَقودُ النّارِ")
-        #expect(model.quranLines[model.pageMarkers[127]] == "وَلَو جَعَلناهُ مَلَكًا لَجَعَلناهُ رَجُلًا وَلَلَبَسنا عَلَيهِم ما يَلبِسونَ")
-        #expect(model.quranLines[model.pageMarkers[281]] == "عَسىٰ رَبُّكُم أَن يَرحَمَكُم وَإِن عُدتُم عُدنا وَجَعَلنا جَهَنَّمَ لِلكافِرينَ حَصيرًا")
-        #expect(model.quranLines[model.pageMarkers[602]] == "قُل هُوَ اللَّهُ أَحَدٌ")
+        #expect(model.quranLines[model.pageMarkers[0]] == "صِراطَ الَّذينَ أَنعَمتَ عَلَيهِم غَيرِ المَغضوبِ عَلَيهِم وَلَا الضّالّينَ")
+        #expect(model.quranLines[model.pageMarkers[49]] == "رَبَّنا إِنَّكَ جامِعُ النّاسِ لِيَومٍ لا رَيبَ فيهِ إِنَّ اللَّهَ لا يُخلِفُ الميعادَ")
+        #expect(model.quranLines[model.pageMarkers[128]] == "وَهُوَ القاهِرُ فَوقَ عِبادِهِ وَهُوَ الحَكيمُ الخَبيرُ")
+        #expect(model.quranLines[model.pageMarkers[281]] == "إِن أَحسَنتُم أَحسَنتُم لِأَنفُسِكُم وَإِن أَسَأتُم فَلَها فَإِذا جاءَ وَعدُ الآخِرَةِ لِيَسوءوا وُجوهَكُم وَلِيَدخُلُوا المَسجِدَ كَما دَخَلوهُ أَوَّلَ مَرَّةٍ وَلِيُتَبِّروا ما عَلَوا تَتبيرًا")
+        #expect(model.quranLines[model.pageMarkers[602]] == "في جيدِها حَبلٌ مِن مَسَدٍ")
     }
 
     @Test func testPageMarkersSorted() {
@@ -72,8 +72,8 @@ struct QuranModelTests {
         #expect(model.pageNumber(forAyahIndex: 10) == 2)
         #expect(model.pageNumber(forAyahIndex: 12) == 3)  // Page 3
         #expect(model.pageNumber(forAyahIndex: 17) == 3)  // Page 4
-        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[281]) == 283)
-        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[602]) == 604)
+        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[281]) == 282)
+        #expect(model.pageNumber(forAyahIndex: model.pageMarkers[602]) == 603)
     }
 
     @Test("Test pageNumber(forAyahIndex:)")

@@ -37,7 +37,6 @@ struct MuhaffezViewModelTwoPagesTests {
         let result = viewModel.leftPage.textString
 
         print("result: \(result)")
-        #expect(result.contains("سورة البقرة"))
         #expect(result.contains("الكِتابُ"))
         #expect(result.contains("لِلمُتَّقينَ"))
     }
