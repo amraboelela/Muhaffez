@@ -54,12 +54,9 @@ extension MuhaffezViewModel {
             wordIndexInLine += 1
             add(separator: " ")
             if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
-                if !quranModel.isEndOfSurah(currentLineIndex) {
-                    if quranModel.isEndOfRub3(currentLineIndex) {
-                        add(separator: AttributedString("⭐ "))
-                    } else {
-                        add(separator: AttributedString("🌼 "))
-                    }
+                add(separator: AttributedString("🌼 "))
+                if quranModel.isEndOfRub3(currentLineIndex) && !quranModel.isEndOfSurah(currentLineIndex) {
+                    add(separator: AttributedString("⭐ "))
                 }
                 advanceLine()
             }
@@ -73,7 +70,7 @@ extension MuhaffezViewModel {
     private func attributedWord(for word: String, matched: Bool) -> AttributedString {
         var attributedWord = AttributedString(word)
         attributedWord.foregroundColor = matched ? .darkGreen : .red
-        attributedWord.font = .system(size: 25, weight: .regular)
+        attributedWord.font = .system(size: 24, weight: .regular)
         return attributedWord
     }
 

@@ -92,7 +92,7 @@ struct MuhaffezViewModelTests {
 
     @Test func testMatchedWordsPartialMatch() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "ان الله يامركم الامانة"
+        viewModel.voiceText = "ان الله يامركم الأَمانا"
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
@@ -105,7 +105,7 @@ struct MuhaffezViewModelTests {
     @Test func testForwardMatch() async throws {
         let viewModel = MuhaffezViewModel()
 
-        viewModel.voiceText = "ان الله يامركم الى الامانة"
+        viewModel.voiceText = "ان الله يامركم الى الأَمانا"
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }

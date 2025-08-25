@@ -53,6 +53,9 @@ class MuhaffezViewModel {
                     tempLeftPage.reset()
                 }
             }
+            if !oldValue && currentPageIsRight {
+                rightPage.reset()
+            }
         }
     }
 
@@ -66,7 +69,8 @@ class MuhaffezViewModel {
     private let synthesizer = AVSpeechSynthesizer()
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    private let matchThreshold = 0.7
+    private let matchThreshold = 0.5
+    private let seekMatchThreshold = 0.8
 
     // MARK: - Public Actions
 
@@ -163,11 +167,11 @@ class MuhaffezViewModel {
         var results: [(String, Bool)] = []
         var quranWordsIndex = -1
 
+        print("voiceWords: \(voiceWords)")
         for voiceWord in voiceWords {
             quranWordsIndex += 1
             guard quranWordsIndex < quranWords.count else { break }
 
-            //let normVoiceWord = voiceWord.normalizedArabic
             let qWord = quranWords[quranWordsIndex]
             let normQWord = qWord.normalizedArabic
             let score = voiceWord.similarity(to: normQWord)
@@ -186,6 +190,7 @@ class MuhaffezViewModel {
         }
 
         matchedWords = results
+        print("matchedWords: \(matchedWords)")
     }
 
     private func tryBackwardMatch(
@@ -193,10 +198,10 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...3 {
+        for step in 1...4 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) >= matchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
                 index -= step
                 results.removeLast(step)
                 results.append((qWord, true))
@@ -211,10 +216,10 @@ class MuhaffezViewModel {
         _ voice: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...3 {
+        for step in 1...4 {
             guard index + step < quranWords.count else { break }
             let qWord = quranWords[index + step]
-            if voice.similarity(to: qWord.normalizedArabic) >= matchThreshold {
+            if voice.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
                 results.append((quranWords[index], false))
                 for s in 1..<step {
                     results.append((quranWords[index + s], false))

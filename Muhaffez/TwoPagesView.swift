@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TwoPagesView: View {
-    @State var viewModel: MuhaffezViewModel
+    @Bindable var viewModel: MuhaffezViewModel
     @State private var scrollToPage: String? = nil
 
     var body: some View {
@@ -25,7 +25,14 @@ struct TwoPagesView: View {
                         .id("RIGHT")
                 }
             }
-            .onChange(of: viewModel.currentPageIsRight) {
+//            .onChange(of: viewModel.currentPageIsRight) {
+//                print("onChange(of viewModel.currentPageIsRight: \(viewModel.currentPageIsRight)")
+//                scrollToPage = viewModel.currentPageIsRight ? "RIGHT" : "LEFT"
+//                withAnimation {
+//                    proxy.scrollTo(scrollToPage, anchor: .center)
+//                }
+//            }
+            .onChange(of: viewModel.leftPage.text) {
                 scrollToPage = viewModel.currentPageIsRight ? "RIGHT" : "LEFT"
                 withAnimation {
                     proxy.scrollTo(scrollToPage, anchor: .center)
@@ -33,6 +40,7 @@ struct TwoPagesView: View {
             }
             .onAppear {
                 proxy.scrollTo("RIGHT", anchor: .center)
+                
                 // Use this for testing
 //                viewModel.currentPageIsRight = true
 //                Task {
@@ -41,9 +49,9 @@ struct TwoPagesView: View {
 //                    try? await Task.sleep(for: .seconds(2))
 //                    viewModel.currentPageIsRight = true
 //                }
-
-//                viewModel.voicePageNumber = 1
-//                viewModel.foundAyat = [1]
+//
+//                viewModel.voicePageNumber = 2
+//                viewModel.foundAyat = [8]
 //                viewModel.matchedWords = [("الحَمدُ", true), ("لِلَّهِ", true), ("رَبِّ", true), ("العالَمينَ", true), ("الرَّحمٰنِ", false), ("الرَّحيمِ", false), ("مالِكِ", true), ("يَومِ", true) ]
             }
         }
