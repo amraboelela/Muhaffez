@@ -12,8 +12,13 @@ extension MuhaffezViewModel {
     // MARK: - Computed Properties
 
     func updatePages() {
+        rightPage.text = AttributedString()
+        leftPage.text = AttributedString()
+
+        guard let firstIndex = foundAyat.first else { return }
 
         let quranModel = QuranModel.shared
+        var currentLineIndex = firstIndex
         var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
         var wordIndexInLine = 0
 
@@ -59,7 +64,6 @@ extension MuhaffezViewModel {
                 advanceLine()
             }
         }
-        processedVoiceWords += voiceWords
     }
 
     // MARK: - Helpers

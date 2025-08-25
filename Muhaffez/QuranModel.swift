@@ -152,7 +152,6 @@ class QuranModel {
                         surahMarkers.append(lines.count - 1)
                     } else {
                         lines.append(line)
-                        //ayaCount += 1
                     }
                 }
             } catch {

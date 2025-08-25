@@ -59,7 +59,7 @@ struct MuhaffezViewModelTwoPagesTests {
         #expect(textString.contains("⭐"))
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
-        #expect(viewModel.voiceWords.count == 1)
+        #expect(viewModel.voiceWords.count == 6)
         textString = viewModel.leftPage.textString
         #expect(textString.contains("─"))
         #expect(textString.contains("⭐"))

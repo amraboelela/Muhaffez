@@ -18,18 +18,6 @@ class MuhaffezViewModel {
     var voiceText = "" {
         didSet {
             voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
-            if voiceWords.count > processedVoiceWords.count {
-                var count = 0
-                for (index, word) in processedVoiceWords.enumerated() {
-                    if word == voiceWords[index] {
-                        count += 1
-                    } else {
-                        break
-                    }
-                }
-                voiceWords.removeFirst(count)
-                updateQuranText()
-            }
             if !voiceText.isEmpty {
                 updateFoundAyat()
                 updateMatchedWords()
@@ -43,13 +31,7 @@ class MuhaffezViewModel {
             updatePages()
         }
     }
-    var foundAyat = [Int]() {
-        didSet {
-            if let firstFoundAyat = foundAyat.first, foundAyat.count == 1 {
-                currentLineIndex = firstFoundAyat
-            }
-        }
-    }
+    var foundAyat = [Int]()
 
     var quranText = "" {
         didSet {
@@ -59,8 +41,6 @@ class MuhaffezViewModel {
 
     var quranWords = [String]()
     var voiceWords = [String]()
-    var processedVoiceWords = [String]()
-    var currentLineIndex = 0
     var rightPage = PageModel()
     var leftPage = PageModel()
     var voicePageNumber = 1
@@ -73,10 +53,6 @@ class MuhaffezViewModel {
             }
         }
     }
-    //guard let firstIndex = foundAyat.first else { return }
-
-    //let quranModel = QuranModel.shared
-     //firstIndex
 
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers
@@ -98,9 +74,7 @@ class MuhaffezViewModel {
         matchedWords = []
         voiceText = ""
         voicePageNumber = 1
-        currentLineIndex = 0
         currentPageIsRight = true
-        processedVoiceWords = [String]()
         rightPage.reset()
         leftPage.reset()
     }
@@ -120,7 +94,7 @@ class MuhaffezViewModel {
                 foundAyat.append(index)
             }
         }
-        
+
         // Fallback with debounce if no matches
         if foundAyat.isEmpty {
             debounceTimer?.invalidate()
@@ -161,12 +135,14 @@ class MuhaffezViewModel {
     }
 
     private func updateQuranText() {
-        quranText = quranLines[currentLineIndex]
-        
-        if foundAyat.count == 1 {
-            let endIndex = min(currentLineIndex + 5, quranLines.count)
-            let extraLines = quranLines[(currentLineIndex + 1)..<endIndex]
-            quranText = ([quranText] + extraLines).joined(separator: " ")
+        if let firstIndex = foundAyat.first {
+            quranText = quranLines[firstIndex]
+
+            if foundAyat.count == 1 {
+                let endIndex = min(firstIndex + 100, quranLines.count)
+                let extraLines = quranLines[(firstIndex + 1)..<endIndex]
+                quranText = ([quranText] + extraLines).joined(separator: " ")
+            }
         }
     }
 

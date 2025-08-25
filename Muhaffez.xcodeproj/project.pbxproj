@@ -14,19 +14,11 @@
 			remoteGlobalIDString = F5B728732E53CDC600E7B4AC;
 			remoteInfo = Muhaffez;
 		};
-		F5B7288C2E53CDC700E7B4AC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F5B7286C2E53CDC600E7B4AC /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F5B728732E53CDC600E7B4AC;
-			remoteInfo = Muhaffez;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		F5B728742E53CDC600E7B4AC /* Muhaffez.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Muhaffez.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F5B7288B2E53CDC700E7B4AC /* MuhaffezUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5E1302D2E541CDB0020243D /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		F5E1302E2E541CEF0020243D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -40,11 +32,6 @@
 		F5B728842E53CDC700E7B4AC /* MuhaffezTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MuhaffezTests;
-			sourceTree = "<group>";
-		};
-		F5B7288E2E53CDC700E7B4AC /* MuhaffezUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MuhaffezUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -64,13 +51,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F5B728882E53CDC700E7B4AC /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,7 +61,6 @@
 				F5E1302D2E541CDB0020243D /* LICENSE */,
 				F5B728762E53CDC600E7B4AC /* Muhaffez */,
 				F5B728842E53CDC700E7B4AC /* MuhaffezTests */,
-				F5B7288E2E53CDC700E7B4AC /* MuhaffezUITests */,
 				F5B728752E53CDC600E7B4AC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -91,7 +70,6 @@
 			children = (
 				F5B728742E53CDC600E7B4AC /* Muhaffez.app */,
 				F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */,
-				F5B7288B2E53CDC700E7B4AC /* MuhaffezUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -144,29 +122,6 @@
 			productReference = F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		F5B7288A2E53CDC700E7B4AC /* MuhaffezUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F5B7289B2E53CDC700E7B4AC /* Build configuration list for PBXNativeTarget "MuhaffezUITests" */;
-			buildPhases = (
-				F5B728872E53CDC700E7B4AC /* Sources */,
-				F5B728882E53CDC700E7B4AC /* Frameworks */,
-				F5B728892E53CDC700E7B4AC /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				F5B7288D2E53CDC700E7B4AC /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F5B7288E2E53CDC700E7B4AC /* MuhaffezUITests */,
-			);
-			name = MuhaffezUITests;
-			packageProductDependencies = (
-			);
-			productName = MuhaffezUITests;
-			productReference = F5B7288B2E53CDC700E7B4AC /* MuhaffezUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -181,10 +136,6 @@
 						CreatedOnToolsVersion = 16.4;
 					};
 					F5B728802E53CDC700E7B4AC = {
-						CreatedOnToolsVersion = 16.4;
-						TestTargetID = F5B728732E53CDC600E7B4AC;
-					};
-					F5B7288A2E53CDC700E7B4AC = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = F5B728732E53CDC600E7B4AC;
 					};
@@ -206,7 +157,6 @@
 			targets = (
 				F5B728732E53CDC600E7B4AC /* Muhaffez */,
 				F5B728802E53CDC700E7B4AC /* MuhaffezTests */,
-				F5B7288A2E53CDC700E7B4AC /* MuhaffezUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -220,13 +170,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F5B7287F2E53CDC700E7B4AC /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F5B728892E53CDC700E7B4AC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -250,13 +193,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F5B728872E53CDC700E7B4AC /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -264,11 +200,6 @@
 			isa = PBXTargetDependency;
 			target = F5B728732E53CDC600E7B4AC /* Muhaffez */;
 			targetProxy = F5B728822E53CDC700E7B4AC /* PBXContainerItemProxy */;
-		};
-		F5B7288D2E53CDC700E7B4AC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F5B728732E53CDC600E7B4AC /* Muhaffez */;
-			targetProxy = F5B7288C2E53CDC700E7B4AC /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -492,40 +423,6 @@
 			};
 			name = Release;
 		};
-		F5B7289C2E53CDC700E7B4AC /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PHEF24B589;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.amr.MuhaffezUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Muhaffez;
-			};
-			name = Debug;
-		};
-		F5B7289D2E53CDC700E7B4AC /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PHEF24B589;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.amr.MuhaffezUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Muhaffez;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -552,15 +449,6 @@
 			buildConfigurations = (
 				F5B728992E53CDC700E7B4AC /* Debug */,
 				F5B7289A2E53CDC700E7B4AC /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F5B7289B2E53CDC700E7B4AC /* Build configuration list for PBXNativeTarget "MuhaffezUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F5B7289C2E53CDC700E7B4AC /* Debug */,
-				F5B7289D2E53CDC700E7B4AC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
