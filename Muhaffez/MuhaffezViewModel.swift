@@ -70,7 +70,7 @@ class MuhaffezViewModel {
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
     private let matchThreshold = 0.6
-    private let seekMatchThreshold = 0.8
+    private let seekMatchThreshold = 0.7
 
     // MARK: - Public Actions
 
@@ -198,7 +198,7 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...4 {
+        for step in 1...3 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
             if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
@@ -216,7 +216,7 @@ class MuhaffezViewModel {
         _ voice: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...4 {
+        for step in 1...3 {
             guard index + step < quranWords.count else { break }
             let qWord = quranWords[index + step]
             if voice.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
