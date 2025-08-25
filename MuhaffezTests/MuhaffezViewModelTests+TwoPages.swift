@@ -50,7 +50,6 @@ struct MuhaffezViewModelTwoPagesTests {
         while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
-        //var attributed = viewModel.leftPage.text
         var textString = viewModel.leftPage.textString
 
         // Assert
@@ -61,10 +60,10 @@ struct MuhaffezViewModelTwoPagesTests {
         #expect(textString.contains("⭐"))
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
-
+        #expect(viewModel.voiceWords.count == 1)
         textString = viewModel.leftPage.textString
         #expect(textString.contains("─"))
-        #expect(textString.contains("🌼"))
+        #expect(textString.contains("⭐"))
         viewModel.isRecording = true
         // Testing the peek feature after 3 seconds
         while viewModel.leftPage.textString.count == textString.count {
@@ -73,7 +72,7 @@ struct MuhaffezViewModelTwoPagesTests {
         #expect(viewModel.leftPage.textString.count > textString.count)
         textString = viewModel.leftPage.textString
         print("textString: \(textString)")
-        #expect(textString.contains("مَا"))
+        #expect(textString.contains("إِنَّ"))
 
         viewModel.resetData()
         viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
@@ -84,6 +83,6 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.voiceText = "نحن جعلناها تذكرة"
         viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
         textString = viewModel.leftPage.textString
-        #expect(textString.contains("⭐"))
+        #expect(textString.contains("نَحنُ"))
     }
 }

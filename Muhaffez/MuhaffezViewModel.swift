@@ -18,6 +18,18 @@ class MuhaffezViewModel {
     var voiceText = "" {
         didSet {
             voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
+            if voiceWords.count > processedVoiceWords.count {
+                var count = 0
+                for (index, word) in processedVoiceWords.enumerated() {
+                    if word == voiceWords[index] {
+                        count += 1
+                    } else {
+                        break
+                    }
+                }
+                voiceWords.removeFirst(count)
+                updateQuranText()
+            }
             if !voiceText.isEmpty {
                 updateFoundAyat()
                 updateMatchedWords()
@@ -31,7 +43,13 @@ class MuhaffezViewModel {
             updatePages()
         }
     }
-    var foundAyat = [Int]()
+    var foundAyat = [Int]() {
+        didSet {
+            if let firstFoundAyat = foundAyat.first, foundAyat.count == 1 {
+                currentLineIndex = firstFoundAyat
+            }
+        }
+    }
 
     var quranText = "" {
         didSet {
@@ -41,27 +59,24 @@ class MuhaffezViewModel {
 
     var quranWords = [String]()
     var voiceWords = [String]()
-    var rightPage = PageModel() {
+    var processedVoiceWords = [String]()
+    var currentLineIndex = 0
+    var rightPage = PageModel()
+    var leftPage = PageModel()
+    var voicePageNumber = 1
+    var currentPageIsRight = true {
         didSet {
-            print("rightPage: \(rightPage)")
-        }
-    }
-    var leftPage = PageModel() {
-        didSet {
-            print("leftPage: \(rightPage)")
-        }
-    }
-    var voicePageNumber = 0
-    var currentPageIsRight: Bool? {
-        didSet {
-            voicePageNumber += 1
-            if let currentPageIsRight, currentPageIsRight {
+            if currentPageIsRight {
                 withAnimation {
                     leftPage.reset()
                 }
             }
         }
     }
+    //guard let firstIndex = foundAyat.first else { return }
+
+    //let quranModel = QuranModel.shared
+     //firstIndex
 
     let quranLines = QuranModel.shared.quranLines
     let pageMarkers = QuranModel.shared.pageMarkers
@@ -82,8 +97,10 @@ class MuhaffezViewModel {
         quranText = ""
         matchedWords = []
         voiceText = ""
-        voicePageNumber = 0
-        currentPageIsRight = nil
+        voicePageNumber = 1
+        currentLineIndex = 0
+        currentPageIsRight = true
+        processedVoiceWords = [String]()
         rightPage.reset()
         leftPage.reset()
     }
@@ -144,14 +161,12 @@ class MuhaffezViewModel {
     }
 
     private func updateQuranText() {
-        if let firstIndex = foundAyat.first {
-            quranText = quranLines[firstIndex]
-
-            if foundAyat.count == 1 {
-                let endIndex = min(firstIndex + 100, quranLines.count)
-                let extraLines = quranLines[(firstIndex + 1)..<endIndex]
-                quranText = ([quranText] + extraLines).joined(separator: " ")
-            }
+        quranText = quranLines[currentLineIndex]
+        
+        if foundAyat.count == 1 {
+            let endIndex = min(currentLineIndex + 5, quranLines.count)
+            let extraLines = quranLines[(currentLineIndex + 1)..<endIndex]
+            quranText = ([quranText] + extraLines).joined(separator: " ")
         }
     }
 

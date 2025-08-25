@@ -23,6 +23,7 @@ struct MuhaffezView: View {
                             .scaleEffect(2)
                         Spacer()
                     }
+                    Spacer()
                 } else {
                     TwoPagesView(viewModel: viewModel)
                 }
@@ -48,7 +49,6 @@ struct MuhaffezView: View {
             }
         }
         .onChange(of: recognizer.voiceText) { _, newValue in
-            print("#quran newValue: \(newValue)")
             viewModel.voiceText = newValue
         }
         .onAppear {

@@ -26,30 +26,32 @@ struct TwoPagesView: View {
                 }
             }
             .onChange(of: viewModel.currentPageIsRight) {
-                if let currentPageIsRight = viewModel.currentPageIsRight {
-                    scrollToPage = currentPageIsRight ? "RIGHT" : "LEFT"
-                    withAnimation {
-                        proxy.scrollTo(scrollToPage, anchor: .center)
-                    }
+                scrollToPage = viewModel.currentPageIsRight ? "RIGHT" : "LEFT"
+                withAnimation {
+                    proxy.scrollTo(scrollToPage, anchor: .center)
                 }
             }
             .onAppear {
+                proxy.scrollTo("RIGHT", anchor: .center)
                 // Use this for testing
 //                viewModel.currentPageIsRight = true
 //                Task {
 //                    try? await Task.sleep(for: .seconds(2))
 //                    viewModel.currentPageIsRight = false
-//                    //scrollToPage = "LEFT"
 //                    try? await Task.sleep(for: .seconds(2))
 //                    viewModel.currentPageIsRight = true
 //                }
+
+//                viewModel.voicePageNumber = 1
+//                viewModel.foundAyat = [1]
+//                viewModel.matchedWords = [("الحَمدُ", true), ("لِلَّهِ", true), ("رَبِّ", true), ("العالَمينَ", true), ("الرَّحمٰنِ", false), ("الرَّحيمِ", false), ("مالِكِ", true), ("يَومِ", true) ]
             }
         }
     }
 
     @ViewBuilder
     private func pageView(pageModel: PageModel, isLeft: Bool) -> some View {
-        VStack {
+        VStack(alignment: .leading) {
             HStack {
                 if pageModel.pageNumber > 0 {
                     Text("\(pageModel.pageNumber)")
@@ -70,14 +72,14 @@ struct TwoPagesView: View {
                         .frame(width: 2)
                         .padding(.vertical, 8)
                 }
-                VStack {
+                VStack(alignment: .leading) {
                     if viewModel.voicePageNumber == 1 {
                         Spacer()
                     }
                     Text(pageModel.text)
-                        .environment(\.layoutDirection, .rightToLeft)
-                        .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .environment(\.layoutDirection, .rightToLeft)
+                        .padding(8)
                     Spacer()
                 }
                 .border(Color.gray)

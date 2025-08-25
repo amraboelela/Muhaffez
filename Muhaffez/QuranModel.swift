@@ -143,17 +143,16 @@ class QuranModel {
                 let content = try String(contentsOfFile: path, encoding: .utf8)
                 let fileLines = content.components(separatedBy: .newlines)
 
-                var ayaCount = 0
                 for line in fileLines {
                     if line.isEmpty {
-                        pageMarkers.append(ayaCount)
+                        pageMarkers.append(lines.count - 1)
                     } else if line == "*" {
-                        rub3Markers.append(ayaCount)
+                        rub3Markers.append(lines.count - 1)
                     } else if line == "-" {
-                        surahMarkers.append(ayaCount)
+                        surahMarkers.append(lines.count - 1)
                     } else {
                         lines.append(line)
-                        ayaCount += 1
+                        //ayaCount += 1
                     }
                 }
             } catch {
@@ -259,18 +258,22 @@ class QuranModel {
     }
 
     func updatePageModelsIfNeeded(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
-        if viewModel.currentPageIsRight == nil ||
-            viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
+        if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
             updatePageModels(viewModel: viewModel, ayahIndex: index)
+            viewModel.voicePageNumber += 1
+            if viewModel.currentPageIsRight {
+                viewModel.rightPage.text = AttributedString()
+                viewModel.leftPage.text = AttributedString()
+            }
         }
     }
 
     /// Helper: true if current ayah index is at the end of a rub3
     func isEndOfRub3(_ ayahIndex: Int) -> Bool {
-        return rub3Markers.contains(ayahIndex + 1) // markers are 1-based usually
+        return rub3Markers.contains(ayahIndex)
     }
 
     func isEndOfSurah(_ ayahIndex: Int) -> Bool {
-        return surahMarkers.contains(ayahIndex) // markers are 1-based usually
+        return surahMarkers.contains(ayahIndex)
     }
 }

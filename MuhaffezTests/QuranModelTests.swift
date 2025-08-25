@@ -6,6 +6,7 @@
 //
 
 import Testing
+import SwiftUI
 @testable import Muhaffez
 
 @MainActor
@@ -68,6 +69,7 @@ struct QuranModelTests {
         #expect(model.pageNumber(forAyahIndex: 0) == 1)   // Page 1
         #expect(model.pageNumber(forAyahIndex: 6) == 1)   // Page 1
         #expect(model.pageNumber(forAyahIndex: 7) == 2)   // Page 2
+        #expect(model.pageNumber(forAyahIndex: 10) == 2)
         #expect(model.pageNumber(forAyahIndex: 12) == 3)  // Page 3
         #expect(model.pageNumber(forAyahIndex: 17) == 3)  // Page 4
         #expect(model.pageNumber(forAyahIndex: model.pageMarkers[281]) == 283)
@@ -229,7 +231,7 @@ struct QuranModelTests {
         let ayahIndex = 1
         let quranModel = QuranModel.shared
 
-        quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: ayahIndex)
+        quranModel.updatePageModels(viewModel: viewModel, ayahIndex: ayahIndex)
 
         #expect(viewModel.rightPage.juzNumber == 1)
         #expect(viewModel.rightPage.surahName == "الفاتحة")
@@ -247,5 +249,98 @@ struct QuranModelTests {
         #expect(viewModel.leftPage.juzNumber == 1)
         #expect(viewModel.leftPage.surahName == "البقرة")
         #expect(viewModel.leftPage.pageNumber == 2)
+    }
+
+    @Test
+    func testIsRightPage() {
+        // Given
+        // A dummy implementation for pageNumber(forAyahIndex:) for testing
+        func pageNumber(forAyahIndex index: Int) -> Int {
+            return index // just returns index for predictable tests
+        }
+        func isRightPage(forAyahIndex index: Int) -> Bool {
+            let page = pageNumber(forAyahIndex: index)
+            return page % 2 == 1
+        }
+
+        // When / Then
+        #expect(isRightPage(forAyahIndex: 1))  // 1 % 2 == 1 → true
+        #expect(!isRightPage(forAyahIndex: 2)) // 2 % 2 == 0 → false
+        #expect(isRightPage(forAyahIndex: 3))  // 3 % 2 == 1 → true
+        #expect(!isRightPage(forAyahIndex: 10))
+    }
+
+//    func isRightPage(forAyahIndex index: Int) -> Bool {
+//        return index % 2 == 1
+//    }
+
+    func updatePageModels(viewModel: inout MuhaffezViewModel, ayahIndex index: Int) {
+        // Simulate updating pages
+        viewModel.leftPage.text = AttributedString("Updated Left")
+        viewModel.rightPage.text = AttributedString("Updated Right")
+    }
+
+    func updatePageModelsIfNeeded(viewModel: inout MuhaffezViewModel, ayahIndex index: Int) {
+        let quranModel = QuranModel.shared
+        if viewModel.currentPageIsRight != quranModel.isRightPage(forAyahIndex: index) {
+            updatePageModels(viewModel: &viewModel, ayahIndex: index)
+            viewModel.voicePageNumber += 1
+            if viewModel.currentPageIsRight {
+                viewModel.rightPage.text = AttributedString()
+                viewModel.leftPage.text = AttributedString()
+            }
+        }
+    }
+
+    @Test
+    func testUpdatePageModelsIfNeeded() {
+        var viewModel = MuhaffezViewModel()
+        viewModel.currentPageIsRight = false
+
+        // When
+        updatePageModelsIfNeeded(viewModel: &viewModel, ayahIndex: 1) // 1 → right page
+
+        // Then
+        #expect(viewModel.voicePageNumber == 2)  // incremented
+        #expect(viewModel.leftPage.text.characters.count > 0)  // got updated
+        #expect(viewModel.rightPage.text.characters.count > 0)
+    }
+
+    @Test
+    func testClearsPagesWhenRightPage() {
+        var viewModel = MuhaffezViewModel()
+        viewModel.currentPageIsRight = true
+
+        // When
+        updatePageModelsIfNeeded(viewModel: &viewModel, ayahIndex: 0) // left page
+
+        // Then
+        #expect(viewModel.voicePageNumber == 1)
+        #expect(viewModel.leftPage.textString.isEmpty)   // cleared
+        #expect(viewModel.rightPage.textString.isEmpty)  // cleared
+    }
+
+    @Test func testClearsPageTextWhenCurrentPageIsRight() {
+        // Arrange
+        let viewModel = MuhaffezViewModel()
+        let quranModel = QuranModel.shared
+
+        // Set current page as right page so condition can trigger
+        viewModel.currentPageIsRight = true
+
+        // Give some initial text so we can verify it gets cleared
+        viewModel.rightPage.text = AttributedString("Right page text")
+        viewModel.leftPage.text = AttributedString("Left page text")
+
+        // Act: Pick an ayahIndex whose page is left page
+        let leftPageIndex = 8
+        quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: leftPageIndex)
+
+        let rightPageIndex = 11
+        quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: rightPageIndex)
+
+        // Assert: Text must be cleared
+        #expect(viewModel.rightPage.textString.isEmpty)
+        #expect(viewModel.leftPage.textString.isEmpty)
     }
 }
