@@ -69,7 +69,7 @@ class MuhaffezViewModel {
     private let synthesizer = AVSpeechSynthesizer()
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
-    private let matchThreshold = 0.5
+    private let matchThreshold = 0.6
     private let seekMatchThreshold = 0.8
 
     // MARK: - Public Actions
@@ -167,7 +167,7 @@ class MuhaffezViewModel {
         var results: [(String, Bool)] = []
         var quranWordsIndex = -1
 
-        print("voiceWords: \(voiceWords)")
+        //print("voiceWords: \(voiceWords)")
         for voiceWord in voiceWords {
             quranWordsIndex += 1
             guard quranWordsIndex < quranWords.count else { break }
@@ -190,7 +190,7 @@ class MuhaffezViewModel {
         }
 
         matchedWords = results
-        print("matchedWords: \(matchedWords)")
+        //print("matchedWords: \(matchedWords)")
     }
 
     private func tryBackwardMatch(
