@@ -19,10 +19,8 @@ struct MuhaffezViewModelTwoPagesTests {
         viewModel.foundAyat = [0]
         viewModel.matchedWords = [("Bismillah", true), ("Rahman", false)]
 
-        // When
         let text = viewModel.rightPage.text
 
-        // Then
         let plainText = String(text.characters)
         #expect(plainText.contains("Bismillah"))
         #expect(plainText.contains("Rahman"))
@@ -42,7 +40,6 @@ struct MuhaffezViewModelTwoPagesTests {
     }
 
     @Test func testColoredFromMatched_addsRub3Separator() async throws {
-        // Arrange
         let viewModel = MuhaffezViewModel()
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ"
@@ -51,12 +48,9 @@ struct MuhaffezViewModelTwoPagesTests {
         }
         var textString = viewModel.leftPage.textString
 
-        // Assert
-        // The rub3 separator "─" should appear because ayah at index 1 ends a rub3
-        #expect(textString.contains("─"))
-        #expect(textString.contains("القارعة"))
-
-        #expect(textString.contains("⭐"))
+        #expect(!textString.contains("─"))
+        #expect(!textString.contains("القارعة"))
+        #expect(!textString.contains("⭐"))
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
         #expect(viewModel.voiceWords.count == 6)
@@ -64,7 +58,6 @@ struct MuhaffezViewModelTwoPagesTests {
         #expect(textString.contains("─"))
         #expect(textString.contains("⭐"))
         viewModel.isRecording = true
-        // Testing the peek feature after 3 seconds
         while viewModel.leftPage.textString.count == textString.count {
             try await Task.sleep(for: .seconds(1))
         }

@@ -241,28 +241,26 @@ class QuranModel {
         return page % 2 == 1
     }
 
-    func updatePageModels(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
-        withAnimation {
-            if isRightPage(forAyahIndex: index) {
-                viewModel.rightPage.juzNumber = juzNumber(forAyahIndex: index)
-                viewModel.rightPage.surahName = surahName(forAyahIndex: index)
-                viewModel.rightPage.pageNumber = pageNumber(forAyahIndex: index)
-            } else {
-                viewModel.leftPage.juzNumber = juzNumber(forAyahIndex: index)
-                viewModel.leftPage.surahName = surahName(forAyahIndex: index)
-                viewModel.leftPage.pageNumber = pageNumber(forAyahIndex: index)
-            }
-            viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)
+    func updatePages(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
+        if isRightPage(forAyahIndex: index) {
+            viewModel.tempRightPage.juzNumber = juzNumber(forAyahIndex: index)
+            viewModel.tempRightPage.surahName = surahName(forAyahIndex: index)
+            viewModel.tempRightPage.pageNumber = pageNumber(forAyahIndex: index)
+        } else {
+            viewModel.tempLeftPage.juzNumber = juzNumber(forAyahIndex: index)
+            viewModel.tempLeftPage.surahName = surahName(forAyahIndex: index)
+            viewModel.tempLeftPage.pageNumber = pageNumber(forAyahIndex: index)
         }
+        viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)
     }
 
     func updatePageModelsIfNeeded(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
         if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
-            updatePageModels(viewModel: viewModel, ayahIndex: index)
+            updatePages(viewModel: viewModel, ayahIndex: index)
             viewModel.voicePageNumber += 1
             if viewModel.currentPageIsRight {
-                viewModel.rightPage.text = AttributedString()
-                viewModel.leftPage.text = AttributedString()
+                viewModel.tempRightPage.text = AttributedString()
+                viewModel.tempLeftPage.text = AttributedString()
             }
         }
     }

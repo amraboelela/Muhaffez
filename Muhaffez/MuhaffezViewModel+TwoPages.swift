@@ -9,11 +9,9 @@ import SwiftUI
 
 extension MuhaffezViewModel {
 
-    // MARK: - Computed Properties
-
     func updatePages() {
-        rightPage.text = AttributedString()
-        leftPage.text = AttributedString()
+        tempRightPage.text = AttributedString()
+        tempLeftPage.text = AttributedString()
 
         guard let firstIndex = foundAyat.first else { return }
 
@@ -30,31 +28,33 @@ extension MuhaffezViewModel {
 
         func add(separator: AttributedString) {
             if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-                rightPage.text += separator
+                tempRightPage.text += separator
             } else {
-                leftPage.text += separator
+                tempLeftPage.text += separator
             }
         }
         
-        quranModel.updatePageModels(viewModel: self, ayahIndex: currentLineIndex)
+        quranModel.updatePages(viewModel: self, ayahIndex: currentLineIndex)
         for (_, (word, isMatched)) in matchedWords.enumerated() {
             quranModel.updatePageModelsIfNeeded(viewModel: self, ayahIndex: currentLineIndex)
+            if isBeginningOfAya(wordIndexInLine) {
+                if quranModel.isEndOfSurah(currentLineIndex - 1) {
+                    add(separator: surahSeparator(ayaIndex: currentLineIndex))
+                    if quranModel.isEndOfRub3(currentLineIndex - 1) {
+                        add(separator: AttributedString("⭐ "))
+                    }
+                }
+            }
             let attributedWord = attributedWord(for: word, matched: isMatched)
             if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-                rightPage.text += attributedWord
+                tempRightPage.text += attributedWord
             } else {
-                leftPage.text += attributedWord
+                tempLeftPage.text += attributedWord
             }
             wordIndexInLine += 1
             add(separator: " ")
-
             if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
-                if quranModel.isEndOfSurah(currentLineIndex) {
-                    add(separator: surahSeparator(ayaIndex: currentLineIndex + 1))
-                    if quranModel.isEndOfRub3(currentLineIndex) {
-                        add(separator: AttributedString("⭐ "))
-                    }
-                } else {
+                if !quranModel.isEndOfSurah(currentLineIndex) {
                     if quranModel.isEndOfRub3(currentLineIndex) {
                         add(separator: AttributedString("⭐ "))
                     } else {
@@ -64,6 +64,8 @@ extension MuhaffezViewModel {
                 advanceLine()
             }
         }
+        rightPage = tempRightPage
+        leftPage = tempLeftPage
     }
 
     // MARK: - Helpers
@@ -71,7 +73,7 @@ extension MuhaffezViewModel {
     private func attributedWord(for word: String, matched: Bool) -> AttributedString {
         var attributedWord = AttributedString(word)
         attributedWord.foregroundColor = matched ? .darkGreen : .red
-        attributedWord.font = .system(size: 18, weight: .regular)
+        attributedWord.font = .system(size: 25, weight: .regular)
         return attributedWord
     }
 
@@ -80,16 +82,20 @@ extension MuhaffezViewModel {
         return lines[index].split(separator: " ").map(String.init)
     }
 
+    private func isBeginningOfAya(_ wordIndex: Int) -> Bool {
+        return wordIndex == 0
+    }
+
     private func isEndOfAya(_ wordIndex: Int, _ wordCount: Int) -> Bool {
         return wordIndex >= wordCount
     }
 
     private func surahSeparator(ayaIndex: Int) -> AttributedString {
         let surahName = QuranModel.shared.surahName(forAyahIndex: ayaIndex)
-        let separator = AttributedString("────────────────────\n\t\t")
+        let separator = AttributedString("─────────────────────\n\t\t\t\t")
         var name = AttributedString("سورة \(surahName)")
         name.font = .system(size: 20, weight: .bold)
-        let separator2 = AttributedString("\n────────────────────\n")
+        let separator2 = AttributedString("\n─────────────────────\n")
         return separator + name + separator2
     }
 }

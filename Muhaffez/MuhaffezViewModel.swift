@@ -41,6 +41,8 @@ class MuhaffezViewModel {
 
     var quranWords = [String]()
     var voiceWords = [String]()
+    var tempRightPage = PageModel()
+    var tempLeftPage = PageModel()
     var rightPage = PageModel()
     var leftPage = PageModel()
     var voicePageNumber = 1
@@ -48,7 +50,7 @@ class MuhaffezViewModel {
         didSet {
             if currentPageIsRight {
                 withAnimation {
-                    leftPage.reset()
+                    tempLeftPage.reset()
                 }
             }
         }
@@ -75,6 +77,8 @@ class MuhaffezViewModel {
         voiceText = ""
         voicePageNumber = 1
         currentPageIsRight = true
+        tempRightPage.reset()
+        tempLeftPage.reset()
         rightPage.reset()
         leftPage.reset()
     }

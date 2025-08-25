@@ -231,11 +231,11 @@ struct QuranModelTests {
         let ayahIndex = 1
         let quranModel = QuranModel.shared
 
-        quranModel.updatePageModels(viewModel: viewModel, ayahIndex: ayahIndex)
+        quranModel.updatePages(viewModel: viewModel, ayahIndex: ayahIndex)
 
-        #expect(viewModel.rightPage.juzNumber == 1)
-        #expect(viewModel.rightPage.surahName == "الفاتحة")
-        #expect(viewModel.rightPage.pageNumber == 1)
+        #expect(viewModel.tempRightPage.juzNumber == 1)
+        #expect(viewModel.tempRightPage.surahName == "الفاتحة")
+        #expect(viewModel.tempRightPage.pageNumber == 1)
     }
 
     @Test("Fills left page when ayah is on left page")
@@ -246,9 +246,9 @@ struct QuranModelTests {
 
         quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: ayahIndex)
 
-        #expect(viewModel.leftPage.juzNumber == 1)
-        #expect(viewModel.leftPage.surahName == "البقرة")
-        #expect(viewModel.leftPage.pageNumber == 2)
+        #expect(viewModel.tempLeftPage.juzNumber == 1)
+        #expect(viewModel.tempLeftPage.surahName == "البقرة")
+        #expect(viewModel.tempLeftPage.pageNumber == 2)
     }
 
     @Test
@@ -340,7 +340,7 @@ struct QuranModelTests {
         quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: rightPageIndex)
 
         // Assert: Text must be cleared
-        #expect(viewModel.rightPage.textString.isEmpty)
-        #expect(viewModel.leftPage.textString.isEmpty)
+        #expect(viewModel.tempRightPage.textString.isEmpty)
+        #expect(viewModel.tempLeftPage.textString.isEmpty)
     }
 }
