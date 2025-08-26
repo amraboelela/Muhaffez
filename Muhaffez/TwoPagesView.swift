@@ -81,16 +81,14 @@ struct TwoPagesView: View {
                         .padding(.vertical, 8)
                 }
                 VStack(alignment: .leading) {
-                    if isRight && viewModel.voicePageNumber < 3 {
+                    if viewModel.voicePageNumber == 1 || (isRight && viewModel.voicePageNumber < 3) {
                         Spacer()
                     }
                     Text(pageModel.text)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .environment(\.layoutDirection, .rightToLeft)
                         .padding(8)
-                    if pageModel.pageNumber == 1 || viewModel.voicePageNumber > 1 {
-                        Spacer()
-                    }
+                    Spacer()
                 }
                 .border(Color.gray)
                 if isRight {
