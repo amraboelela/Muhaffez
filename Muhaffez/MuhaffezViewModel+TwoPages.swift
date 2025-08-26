@@ -55,6 +55,9 @@ extension MuhaffezViewModel {
             add(separator: " ")
             if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
                 add(separator: AttributedString("🌼 "))
+                if quranModel.isEndOfSurah(currentLineIndex) {
+                    add(separator: "\n")
+                }
                 if quranModel.isEndOfRub3(currentLineIndex) && !quranModel.isEndOfSurah(currentLineIndex) {
                     add(separator: AttributedString("⭐ "))
                 }

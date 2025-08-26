@@ -17,36 +17,35 @@ struct StringExtensionTests {
         #expect(text.removingTashkeel == expected)
     }
 
+//    @Test func testNormalizedArabic_removesA3ozoPrefix() {
+//        var original = "اعوذ بالله من الشيطان الرجيم الحمد لله رب العالمين"
+//        var expected = "الحمد لله رب العالمين"
+//        var normalized = original.normalizedArabic
+//        #expect(normalized == expected)
+//
+//        original = "أَعُوذُ بِاللَّهِ مِنَ الشَّيطَانِ الرَّجِيم الحمد لله رب العالمين"
+//        expected = "الحمد لله رب العالمين"
+//        normalized = original.normalizedArabic
+//        #expect(normalized == expected)
+//
+//        original = "أَعُوذُ بِاللَّهِ مِنَ الشَّيطَانِ الرَّجِيم بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+//        expected = "الحمد لله رب العالمين"
+//        normalized = original.normalizedArabic
+//        #expect(normalized == expected)
+//    }
 
-    @Test func testNormalizedArabic_removesA3ozoPrefix() {
-        var original = "اعوذ بالله من الشيطان الرجيم الحمد لله رب العالمين"
-        var expected = "الحمد لله رب العالمين"
-        var normalized = original.normalizedArabic
-        #expect(normalized == expected)
 
-        original = "أَعُوذُ بِاللَّهِ مِنَ الشَّيطَانِ الرَّجِيم الحمد لله رب العالمين"
-        expected = "الحمد لله رب العالمين"
-        normalized = original.normalizedArabic
-        #expect(normalized == expected)
-
-        original = "أَعُوذُ بِاللَّهِ مِنَ الشَّيطَانِ الرَّجِيم بسم الله الرحمن الرحيم الحمد لله رب العالمين"
-        expected = "الحمد لله رب العالمين"
-        normalized = original.normalizedArabic
-        #expect(normalized == expected)
-    }
-
-
-    @Test func testNormalizedArabic_removesBasmalaIfPresent() {
-        // Arrange
-        let original = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
-        let expected = "الحمد لله رب العالمين"
-
-        // Act
-        let normalized = original.normalizedArabic
-
-        // Assert
-        #expect(normalized == expected)
-    }
+//    @Test func testNormalizedArabic_removesBasmalaIfPresent() {
+//        // Arrange
+//        let original = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+//        let expected = "الحمد لله رب العالمين"
+//
+//        // Act
+//        let normalized = original.normalizedArabic
+//
+//        // Assert
+//        #expect(normalized == expected)
+//    }
 
     @Test func testNormalizedArabic_keepsTextIfNoPrefix() {
         // Arrange

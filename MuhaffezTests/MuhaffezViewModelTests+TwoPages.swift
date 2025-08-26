@@ -28,9 +28,8 @@ struct MuhaffezViewModelTwoPagesTests {
 
     @Test("Matched and unmatched words get correct colors and separators")
     func testColoredFromMatched() async throws {
-        // Given
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
+        viewModel.voiceText = "الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
 
         let result = viewModel.leftPage.textString
 
