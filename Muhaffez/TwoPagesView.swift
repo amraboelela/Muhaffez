@@ -35,17 +35,17 @@ struct TwoPagesView: View {
                 proxy.scrollTo("RIGHT", anchor: .center)
 
                 // Use this for testing
-                //                viewModel.currentPageIsRight = true
-                //                Task {
-                //                    try? await Task.sleep(for: .seconds(2))
-                //                    viewModel.currentPageIsRight = false
-                //                    try? await Task.sleep(for: .seconds(2))
-                //                    viewModel.currentPageIsRight = true
-                //                }
-                //
-                //                viewModel.voicePageNumber = 2
-                //                viewModel.foundAyat = [8]
-                //                viewModel.matchedWords = [("الحَمدُ", true), ("لِلَّهِ", true), ("رَبِّ", true), ("العالَمينَ", true), ("الرَّحمٰنِ", false), ("الرَّحيمِ", false), ("مالِكِ", true), ("يَومِ", true) ]
+//                                viewModel.currentPageIsRight = true
+//                                Task {
+//                                    try? await Task.sleep(for: .seconds(2))
+//                                    viewModel.currentPageIsRight = false
+//                                    try? await Task.sleep(for: .seconds(2))
+//                                    viewModel.currentPageIsRight = true
+//                                }
+//                
+//                                viewModel.voicePageNumber = 2
+//                                viewModel.foundAyat = [8]
+//                                viewModel.matchedWords = [("الحَمدُ", true), ("لِلَّهِ", true), ("رَبِّ", true), ("العالَمينَ", true), ("الرَّحمٰنِ", false), ("الرَّحيمِ", false), ("مالِكِ", true), ("يَومِ", true) ]
             }
         }
     }
