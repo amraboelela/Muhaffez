@@ -15,23 +15,16 @@ struct TwoPagesView: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
-                    pageView(pageModel: viewModel.leftPage, isLeft: true)
+                    pageView(pageModel: viewModel.leftPage, isRight: false)
                         .padding(.leading, 4)
                         .frame(width: UIScreen.main.bounds.width)
                         .id("LEFT")
-                    pageView(pageModel: viewModel.rightPage, isLeft: false)
+                    pageView(pageModel: viewModel.rightPage, isRight: true)
                         .padding(.trailing, 4)
                         .frame(width: UIScreen.main.bounds.width)
                         .id("RIGHT")
                 }
             }
-            //            .onChange(of: viewModel.currentPageIsRight) {
-            //                print("onChange(of viewModel.currentPageIsRight: \(viewModel.currentPageIsRight)")
-            //                scrollToPage = viewModel.currentPageIsRight ? "RIGHT" : "LEFT"
-            //                withAnimation {
-            //                    proxy.scrollTo(scrollToPage, anchor: .center)
-            //                }
-            //            }
             .onChange(of: viewModel.rightPage.text) {
                 scrollToCurrentPage(using: proxy)
             }
@@ -65,7 +58,7 @@ struct TwoPagesView: View {
     }
 
     @ViewBuilder
-    private func pageView(pageModel: PageModel, isLeft: Bool) -> some View {
+    private func pageView(pageModel: PageModel, isRight: Bool) -> some View {
         VStack(alignment: .leading) {
             HStack {
                 if pageModel.pageNumber > 0 {
@@ -81,24 +74,26 @@ struct TwoPagesView: View {
             .font(.headline)
             .padding(.horizontal, 12)
             HStack(spacing: 4) {
-                if isLeft {
+                if !isRight {
                     Rectangle()
                         .fill(Color.gray.opacity(0.4))
                         .frame(width: 2)
                         .padding(.vertical, 8)
                 }
                 VStack(alignment: .leading) {
-                    if viewModel.voicePageNumber == 1 {
+                    if isRight && viewModel.voicePageNumber < 3 {
                         Spacer()
                     }
                     Text(pageModel.text)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .environment(\.layoutDirection, .rightToLeft)
                         .padding(8)
-                    Spacer()
+                    if pageModel.pageNumber == 1 || viewModel.voicePageNumber > 1 {
+                        Spacer()
+                    }
                 }
                 .border(Color.gray)
-                if !isLeft {
+                if isRight {
                     Rectangle()
                         .fill(Color.gray.opacity(0.4))
                         .frame(width: 2)

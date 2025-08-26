@@ -183,53 +183,45 @@ class MuhaffezViewModel {
             }
 
             // Try backward and forward search
-            if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
-            if tryForwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
+            if tryBackwardMatch(voiceWord) { continue }
+            if tryForwardMatch(voiceWord) { continue }
 
             results.append((quranWords[quranWordsIndex], false))
         }
 
         matchedWords = results
         //print("matchedWords: \(matchedWords)")
-    }
 
-    private func tryBackwardMatch(
-        _ index: inout Int,
-        _ voiceWord: String,
-        _ results: inout [(String, Bool)]
-    ) -> Bool {
-        for step in 1...3 {
-            guard index - step >= 0 else { break }
-            let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
-                index -= step
-                results.removeLast(step)
-                results.append((qWord, true))
-                return true
-            }
-        }
-        return false
-    }
-
-    private func tryForwardMatch(
-        _ index: inout Int,
-        _ voice: String,
-        _ results: inout [(String, Bool)]
-    ) -> Bool {
-        for step in 1...3 {
-            guard index + step < quranWords.count else { break }
-            let qWord = quranWords[index + step]
-            if voice.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
-                results.append((quranWords[index], false))
-                for s in 1..<step {
-                    results.append((quranWords[index + s], false))
+        func tryBackwardMatch(_ voiceWord: String) -> Bool {
+            var index = quranWordsIndex
+            for step in 1...3 {
+                guard quranWordsIndex - step >= 0 else { break }
+                let qWord = quranWords[index - step]
+                if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
+                    index -= step
+                    results[index].1 = true
+                    return true
                 }
-                index += step
-                results.append((qWord, true))
-                return true
             }
+            return false
         }
-        return false
+
+        func tryForwardMatch(_ voiceWord: String) -> Bool {
+            for step in 1...3 {
+                guard quranWordsIndex + step < quranWords.count else { break }
+                let qWord = quranWords[quranWordsIndex + step]
+                if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
+                    results.append((quranWords[quranWordsIndex], false))
+                    for s in 1..<step {
+                        results.append((quranWords[quranWordsIndex + s], false))
+                    }
+                    quranWordsIndex += step
+                    results.append((qWord, true))
+                    return true
+                }
+            }
+            return false
+        }
     }
 
     // MARK: - Peek Helper

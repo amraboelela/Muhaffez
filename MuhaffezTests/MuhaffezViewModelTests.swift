@@ -169,7 +169,7 @@ struct MuhaffezViewModelTests {
         matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.contains("إِنَّ"))
         #expect(matchedTrues.contains("اللَّهَ"))
-        #expect(!matchedTrues.contains("يَأمُرُكُم"))
+        #expect(matchedTrues.contains("يَأمُرُكُم"))
     }
 
     @Test func testMatchedWordsWithTypos() async throws {
