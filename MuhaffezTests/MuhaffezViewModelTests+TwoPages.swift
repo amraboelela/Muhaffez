@@ -10,70 +10,70 @@ import Testing
 
 @MainActor
 struct MuhaffezViewModelTwoPagesTests {
-
-    @Test("Display text builds correctly from foundAyat")
-    func testDisplayText() async throws {
-        // Given
-        let viewModel = MuhaffezViewModel()
-        //viewModel.quranLines = ["Bismillah ir Rahman ir Rahim"]
-        viewModel.foundAyat = [0]
-        viewModel.matchedWords = [("Bismillah", true), ("Rahman", false)]
-
-        let text = viewModel.rightPage.text
-
-        let plainText = String(text.characters)
-        #expect(plainText.contains("Bismillah"))
-        #expect(plainText.contains("Rahman"))
+  
+  @Test("Display text builds correctly from foundAyat")
+  func testDisplayText() async throws {
+    // Given
+    let viewModel = MuhaffezViewModel()
+    //viewModel.quranLines = ["Bismillah ir Rahman ir Rahim"]
+    viewModel.foundAyat = [0]
+    viewModel.matchedWords = [("Bismillah", true), ("Rahman", false)]
+    
+    let text = viewModel.rightPage.text
+    
+    let plainText = String(text.characters)
+    #expect(plainText.contains("Bismillah"))
+    #expect(plainText.contains("Rahman"))
+  }
+  
+  @Test("Matched and unmatched words get correct colors and separators")
+  func testColoredFromMatched() async throws {
+    let viewModel = MuhaffezViewModel()
+    viewModel.voiceText = "الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
+    
+    let result = viewModel.leftPage.textString
+    
+    print("result: \(result)")
+    #expect(result.contains("الكِتابُ"))
+    #expect(result.contains("لِلمُتَّقينَ"))
+  }
+  
+  @Test func testColoredFromMatched_addsRub3Separator() async throws {
+    let viewModel = MuhaffezViewModel()
+    
+    viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ"
+    while viewModel.foundAyat.count == 0 {
+      try await Task.sleep(for: .seconds(1))
     }
-
-    @Test("Matched and unmatched words get correct colors and separators")
-    func testColoredFromMatched() async throws {
-        let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ"
-
-        let result = viewModel.leftPage.textString
-
-        print("result: \(result)")
-        #expect(result.contains("الكِتابُ"))
-        #expect(result.contains("لِلمُتَّقينَ"))
+    var textString = viewModel.leftPage.textString
+    
+    #expect(!textString.contains("─"))
+    #expect(!textString.contains("القارعة"))
+    #expect(!textString.contains("⭐"))
+    
+    viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
+    #expect(viewModel.voiceWords.count == 6)
+    textString = viewModel.leftPage.textString
+    #expect(textString.contains("─"))
+    #expect(textString.contains("⭐"))
+    viewModel.isRecording = true
+    while viewModel.leftPage.textString.count == textString.count {
+      try await Task.sleep(for: .seconds(1))
     }
-
-    @Test func testColoredFromMatched_addsRub3Separator() async throws {
-        let viewModel = MuhaffezViewModel()
-
-        viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ"
-        while viewModel.foundAyat.count == 0 {
-            try await Task.sleep(for: .seconds(1))
-        }
-        var textString = viewModel.leftPage.textString
-
-        #expect(!textString.contains("─"))
-        #expect(!textString.contains("القارعة"))
-        #expect(!textString.contains("⭐"))
-
-        viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
-        #expect(viewModel.voiceWords.count == 6)
-        textString = viewModel.leftPage.textString
-        #expect(textString.contains("─"))
-        #expect(textString.contains("⭐"))
-        viewModel.isRecording = true
-        while viewModel.leftPage.textString.count == textString.count {
-            try await Task.sleep(for: .seconds(1))
-        }
-        #expect(viewModel.leftPage.textString.count > textString.count)
-        textString = viewModel.leftPage.textString
-        print("textString: \(textString)")
-        #expect(textString.contains("إِنَّ"))
-
-        viewModel.resetData()
-        viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
-        textString = viewModel.rightPage.textString
-        #expect(textString.contains("⭐"))
-
-        viewModel.resetData()
-        viewModel.voiceText = "نحن جعلناها تذكرة"
-        viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
-        textString = viewModel.leftPage.textString
-        #expect(textString.contains("نَحنُ"))
-    }
+    #expect(viewModel.leftPage.textString.count > textString.count)
+    textString = viewModel.leftPage.textString
+    print("textString: \(textString)")
+    #expect(textString.contains("إِنَّ"))
+    
+    viewModel.resetData()
+    viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
+    textString = viewModel.rightPage.textString
+    #expect(textString.contains("⭐"))
+    
+    viewModel.resetData()
+    viewModel.voiceText = "نحن جعلناها تذكرة"
+    viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
+    textString = viewModel.leftPage.textString
+    #expect(textString.contains("نَحنُ"))
+  }
 }

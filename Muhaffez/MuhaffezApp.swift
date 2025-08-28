@@ -11,21 +11,21 @@ import AVFoundation
 
 @main
 struct MuhaffezApp: App {
-
-    var body: some Scene {
-        WindowGroup {
-            MuhaffezView()
-                .onAppear {
-                    SFSpeechRecognizer.requestAuthorization { status in
-                        switch status {
-                        case .authorized:
-                            print("Speech recognition authorized")
-                        default:
-                            print("Speech recognition not authorized")
-                        }
-                    }
-                }
+  
+  var body: some Scene {
+    WindowGroup {
+      MuhaffezView()
+        .onAppear {
+          SFSpeechRecognizer.requestAuthorization { status in
+            switch status {
+            case .authorized:
+              print("Speech recognition authorized")
+            default:
+              print("Speech recognition not authorized")
+            }
+          }
         }
     }
+  }
 }
 
