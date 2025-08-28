@@ -31,11 +31,11 @@ struct MuhaffezView: View {
             Button(action: {
                 if viewModel.isRecording {
                     recognizer.stopRecording()
-
                 } else {
                     viewModel.resetData()
                     Task {
                         try? recognizer.startRecording()
+                        //print("called start recording")
                     }
                 }
                 viewModel.isRecording.toggle()
