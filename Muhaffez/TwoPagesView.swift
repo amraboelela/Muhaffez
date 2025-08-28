@@ -34,18 +34,50 @@ struct TwoPagesView: View {
       .onAppear {
         proxy.scrollTo("RIGHT", anchor: .center)
 
-        // Use this for testing
-        viewModel.currentPageIsRight = true
-        Task {
-          try? await Task.sleep(for: .seconds(2))
-          viewModel.currentPageIsRight = false
-          try? await Task.sleep(for: .seconds(2))
-          viewModel.currentPageIsRight = true
-        }
+        // Use this for testing moving to page animation
+        //        viewModel.currentPageIsRight = true
+        //        Task {
+        //          try? await Task.sleep(for: .seconds(2))
+        //          viewModel.currentPageIsRight = false
+        //          try? await Task.sleep(for: .seconds(2))
+        //          viewModel.currentPageIsRight = true
+        //        }
 
-        viewModel.voicePageNumber = 2
-        viewModel.foundAyat = [8]
-        viewModel.matchedWords = [("الحَمدُ", true), ("لِلَّهِ", true), ("رَبِّ", true), ("العالَمينَ", true), ("الرَّحمٰنِ", false), ("الرَّحيمِ", false), ("مالِكِ", true), ("يَومِ", true) ]
+        // Use this for testing changing page content
+//        viewModel.voicePageNumber = 1
+//        viewModel.voiceText = "إِنَّ الَّذينَ كَفَروا سَواءٌ عَلَيهِم أَأَنذَرتَهُم أَم لَم تُنذِرهُم لا يُؤمِنونَ"
+//        Task {
+//          try? await Task.sleep(for: .seconds(0.2))
+//          viewModel.voiceText = """
+//            إِنَّ الَّذينَ كَفَروا سَواءٌ عَلَيهِم أَأَنذَرتَهُم أَم لَم تُنذِرهُم لا يُؤمِنونَ
+//            خَتَمَ اللَّهُ عَلىٰ قُلوبِهِم وَعَلىٰ سَمعِهِم وَعَلىٰ أَبصارِهِم غِشاوَةٌ وَلَهُم عَذابٌ عَظيمٌ
+//            وَمِنَ النّاسِ مَن يَقولُ آمَنّا بِاللَّهِ وَبِاليَومِ الآخِرِ وَما هُم بِمُؤمِنينَ
+//            يُخادِعونَ اللَّهَ وَالَّذينَ آمَنوا وَما يَخدَعونَ إِلّا أَنفُسَهُم وَما يَشعُرونَ
+//            في قُلوبِهِم مَرَضٌ فَزادَهُمُ اللَّهُ مَرَضًا وَلَهُم عَذابٌ أَليمٌ بِما كانوا يَكذِبونَ
+//            وَإِذا قيلَ لَهُم لا تُفسِدوا فِي الأَرضِ قالوا إِنَّما نَحنُ مُصلِحونَ
+//            أَلا إِنَّهُم هُمُ المُفسِدونَ وَلٰكِن لا يَشعُرونَ
+//            وَإِذا قيلَ لَهُم آمِنوا كَما آمَنَ النّاسُ قالوا أَنُؤمِنُ كَما آمَنَ السُّفَهاءُ أَلا إِنَّهُم هُمُ السُّفَهاءُ وَلٰكِن لا يَعلَمونَ
+//            وَإِذا لَقُوا الَّذينَ آمَنوا قالوا آمَنّا وَإِذا خَلَوا إِلىٰ شَياطينِهِم قالوا إِنّا مَعَكُم إِنَّما نَحنُ مُستَهزِئونَ
+//            اللَّهُ يَستَهزِئُ بِهِم وَيَمُدُّهُم في طُغيانِهِم يَعمَهونَ
+//            أُولٰئِكَ الَّذينَ اشتَرَوُا الضَّلالَةَ بِالهُدىٰ فَما رَبِحَت تِجارَتُهُم وَما كانوا مُهتَدينَ
+//            """
+//        }
+
+        // Use for testing displaying surah number
+//        viewModel.voiceText = "اهدِنَا الصِّراطَ المُستَقيمَ"
+//        Task {
+//          try? await Task.sleep(for: .seconds(0.2))
+//          viewModel.voiceText = """
+//            اهدِنَا الصِّراطَ المُستَقيمَ
+//            صِراطَ الَّذينَ أَنعَمتَ عَلَيهِم غَيرِ المَغضوبِ عَلَيهِم وَلَا الضّالّينَ
+//            الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ
+//            الَّذينَ يُؤمِنونَ بِالغَيبِ وَيُقيمونَ الصَّلاةَ وَمِمّا رَزَقناهُم يُنفِقونَ
+//            وَالَّذينَ يُؤمِنونَ بِما أُنزِلَ إِلَيكَ وَما أُنزِلَ مِن قَبلِكَ وَبِالآخِرَةِ هُم يوقِنونَ
+//            أُولٰئِكَ عَلىٰ هُدًى مِن رَبِّهِم وَأُولٰئِكَ هُمُ المُفلِحونَ
+//
+//            """
+//        }
+
       }
     }
   }
@@ -59,27 +91,30 @@ struct TwoPagesView: View {
 
   @ViewBuilder
   private func pageView(pageModel: PageModel, isRight: Bool) -> some View {
-    VStack(alignment: .leading) {
-      HStack {
-        if pageModel.pageNumber > 0 {
-          Text("\(pageModel.pageNumber)")
-          Spacer()
-          Text(pageModel.surahName)
-          Spacer()
-          Text("جزء \(pageModel.juzNumber)")
-        } else {
-          Text(" ")
-        }
+    let opacity = 0.5
+    let shadowWidth: CGFloat = 4
+
+    HStack(spacing: 4) {
+      if !isRight {
+        Rectangle()
+          .fill(Color.gray.opacity(opacity))
+          .frame(width: shadowWidth)
+          .padding(.top, 10)
       }
-      .font(.custom("KFGQPC Uthmanic Script", size: 24))
-      .padding(.horizontal, 12)
-      HStack(spacing: 4) {
-        if !isRight {
-          Rectangle()
-            .fill(Color.gray.opacity(0.5))
-            .frame(width: 5)
-            .padding(.vertical, 10)
+      VStack(alignment: .leading) {
+        HStack {
+          if pageModel.pageNumber > 0 {
+            Text("\(pageModel.pageNumber)")
+            Spacer()
+            Text(pageModel.surahName)
+            Spacer()
+            Text("جزء \(pageModel.juzNumber)")
+          } else {
+            Text(" ")
+          }
         }
+        .font(.custom("KFGQPC Uthmanic Script", size: 24))
+        .padding(.horizontal, 12)
         VStack(alignment: .leading) {
           if viewModel.voicePageNumber == 1 || (isRight && viewModel.voicePageNumber < 3) {
             Spacer()
@@ -90,16 +125,15 @@ struct TwoPagesView: View {
             .padding(8)
           Spacer()
         }
-        .border(Color.gray)
-        if isRight {
-          Rectangle()
-            .fill(Color.gray.opacity(0.5))
-            .frame(width: 5)
-            .padding(.vertical, 10)
-        }
+      }
+      .frame(maxHeight: .infinity)
+      if isRight {
+        Rectangle()
+          .fill(Color.gray.opacity(opacity))
+          .frame(width: shadowWidth)
+        .padding(.top, 10)
       }
     }
-    .frame(maxHeight: .infinity)
   }
 }
 
@@ -107,3 +141,4 @@ struct TwoPagesView: View {
 #Preview {
   TwoPagesView(viewModel: MuhaffezViewModel())
 }
+
