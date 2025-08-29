@@ -284,7 +284,6 @@ struct QuranModelTests {
     let quranModel = QuranModel.shared
     if viewModel.currentPageIsRight != quranModel.isRightPage(forAyahIndex: index) {
       updatePageModels(viewModel: &viewModel, ayahIndex: index)
-      viewModel.voicePageNumber += 1
       if viewModel.currentPageIsRight {
         viewModel.rightPage.text = AttributedString()
         viewModel.leftPage.text = AttributedString()
@@ -296,12 +295,9 @@ struct QuranModelTests {
   func testUpdatePageModelsIfNeeded() {
     var viewModel = MuhaffezViewModel()
     viewModel.currentPageIsRight = false
-    
-    // When
+
     updatePageModelsIfNeeded(viewModel: &viewModel, ayahIndex: 1) // 1 → right page
-    
-    // Then
-    #expect(viewModel.voicePageNumber == 2)  // incremented
+
     #expect(viewModel.leftPage.text.characters.count > 0)  // got updated
     #expect(viewModel.rightPage.text.characters.count > 0)
   }
@@ -310,12 +306,9 @@ struct QuranModelTests {
   func testClearsPagesWhenRightPage() {
     var viewModel = MuhaffezViewModel()
     viewModel.currentPageIsRight = true
-    
-    // When
+
     updatePageModelsIfNeeded(viewModel: &viewModel, ayahIndex: 0) // left page
-    
-    // Then
-    #expect(viewModel.voicePageNumber == 1)
+
     #expect(viewModel.leftPage.textString.isEmpty)   // cleared
     #expect(viewModel.rightPage.textString.isEmpty)  // cleared
   }

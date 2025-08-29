@@ -45,7 +45,6 @@ class MuhaffezViewModel {
   var tempLeftPage = PageModel()
   var rightPage = PageModel()
   var leftPage = PageModel()
-  var voicePageNumber = 1
   var currentPageIsRight = true {
     didSet {
       if currentPageIsRight {
@@ -79,7 +78,6 @@ class MuhaffezViewModel {
     quranText = ""
     matchedWords = []
     voiceText = ""
-    voicePageNumber = 1
     currentPageIsRight = true
     tempRightPage.reset()
     tempLeftPage.reset()

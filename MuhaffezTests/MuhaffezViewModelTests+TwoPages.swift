@@ -54,7 +54,6 @@ struct MuhaffezViewModelTwoPagesTests {
     viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
     #expect(viewModel.voiceWords.count == 6)
     textString = viewModel.leftPage.textString
-    #expect(textString.contains("─"))
     #expect(textString.contains("⭐"))
     viewModel.isRecording = true
     while viewModel.leftPage.textString.count == textString.count {

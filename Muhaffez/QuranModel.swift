@@ -257,7 +257,6 @@ class QuranModel {
   func updatePageModelsIfNeeded(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
     if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
       updatePages(viewModel: viewModel, ayahIndex: index)
-      viewModel.voicePageNumber += 1
       if viewModel.currentPageIsRight {
         viewModel.tempRightPage.text = AttributedString()
         viewModel.tempLeftPage.text = AttributedString()
