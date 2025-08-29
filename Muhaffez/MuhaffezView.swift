@@ -28,8 +28,10 @@ struct MuhaffezView: View {
       }
       Button(action: {
         if viewModel.isRecording {
+          UIApplication.shared.isIdleTimerDisabled = false
           recognizer.stopRecording()
         } else {
+          UIApplication.shared.isIdleTimerDisabled = true
           viewModel.resetData()
           Task {
             try? recognizer.startRecording()
