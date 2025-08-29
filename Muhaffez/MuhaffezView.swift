@@ -13,21 +13,21 @@ struct MuhaffezView: View {
 
   var body: some View {
     VStack {
-      VStack(alignment: .leading) {
-        if viewModel.matchedWords.count == 0 && !viewModel.voiceText.isEmpty {
+      //VStack(alignment: .leading) {
+      if viewModel.matchedWords.count == 0 && !viewModel.voiceText.isEmpty {
+        Spacer()
+        HStack {
           Spacer()
-          HStack {
-            Spacer()
-            ProgressView()
-              .progressViewStyle(CircularProgressViewStyle(tint: .blue))
-              .scaleEffect(2)
-            Spacer()
-          }
+          ProgressView()
+            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+            .scaleEffect(2)
           Spacer()
-        } else {
-          TwoPagesView(viewModel: viewModel)
         }
+        Spacer()
+      } else {
+        TwoPagesView(viewModel: viewModel)
       }
+      //}
       Button(action: {
         if viewModel.isRecording {
           recognizer.stopRecording()
@@ -41,7 +41,7 @@ struct MuhaffezView: View {
         viewModel.isRecording.toggle()
       }) {
         Image(systemName: viewModel.isRecording ? "mic.fill" : "mic")
-          .font(.system(size: 25))
+          .font(.system(size: 20))
           .foregroundColor(viewModel.isRecording ? .red : .blue)
           .padding()
           .background(Circle().fill(Color(.systemGray6)))
