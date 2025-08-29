@@ -81,9 +81,7 @@ struct TwoPagesView: View {
         .font(.custom("KFGQPC Uthmanic Script", size: 24))
         .padding(.horizontal, 12)
         VStack(alignment: .leading) {
-          if viewModel.voicePageNumber == 1 || (isRight && viewModel.voicePageNumber < 3) {
-            Spacer()
-          }
+          Spacer()
           Text(pageModel.text)
             .minimumScaleFactor(0.5)
             .frame(maxWidth: .infinity, alignment: .leading)

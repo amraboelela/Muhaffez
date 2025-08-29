@@ -53,7 +53,7 @@ struct MuhaffezView: View {
       // Use this for testing changing page content
 //      viewModel.voiceText = "إِنَّ الَّذينَ كَفَروا سَواءٌ عَلَيهِم أَأَنذَرتَهُم أَم لَم تُنذِرهُم لا يُؤمِنونَ"
 //      Task {
-//        try? await Task.sleep(for: .seconds(0.2))
+//        try? await Task.sleep(for: .seconds(2))
 //        viewModel.voiceText = """
 //                  إِنَّ الَّذينَ كَفَروا سَواءٌ عَلَيهِم أَأَنذَرتَهُم أَم لَم تُنذِرهُم لا يُؤمِنونَ
 //                  خَتَمَ اللَّهُ عَلىٰ قُلوبِهِم وَعَلىٰ سَمعِهِم وَعَلىٰ أَبصارِهِم غِشاوَةٌ وَلَهُم عَذابٌ عَظيمٌ

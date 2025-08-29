@@ -73,7 +73,7 @@ extension MuhaffezViewModel {
   private func attributedWord(for word: String, matched: Bool) -> AttributedString {
     var attributedWord = AttributedString(word)
     attributedWord.foregroundColor = matched ? .primary : .red
-    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 40)
+    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 35)
     return attributedWord
   }
 
@@ -92,7 +92,7 @@ extension MuhaffezViewModel {
 
   private func surahSeparator(ayaIndex: Int) -> AttributedString {
     let surahName = QuranModel.shared.surahName(forAyahIndex: ayaIndex)
-    let separator = AttributedString("\n\t\t\t\t")
+    let separator = AttributedString("\n\t\t\t\t\t")
     var name = AttributedString("سورة \(surahName)")
     name.font = .custom("KFGQPC Uthmanic Script", size: 28)
     name.underlineStyle = Text.LineStyle.single
