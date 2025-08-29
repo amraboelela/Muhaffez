@@ -147,7 +147,7 @@ class MuhaffezViewModel {
       quranText = quranLines[firstIndex]
       
       if foundAyat.count == 1 {
-        let endIndex = min(firstIndex + 100, quranLines.count)
+        let endIndex = min(firstIndex + 200, quranLines.count)
         let extraLines = quranLines[(firstIndex + 1)..<endIndex]
         quranText = ([quranText] + extraLines).joined(separator: " ")
       }

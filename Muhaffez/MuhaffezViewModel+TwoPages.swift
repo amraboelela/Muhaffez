@@ -73,7 +73,7 @@ extension MuhaffezViewModel {
   private func attributedWord(for word: String, matched: Bool) -> AttributedString {
     var attributedWord = AttributedString(word)
     attributedWord.foregroundColor = matched ? .primary : .red
-    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 26)
+    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 40)
     return attributedWord
   }
 
