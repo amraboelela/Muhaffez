@@ -15,7 +15,6 @@ extension MuhaffezViewModel {
 
     guard let firstIndex = foundAyat.first else { return }
 
-    let quranModel = QuranModel.shared
     var currentLineIndex = firstIndex
     var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
     var wordIndexInLine = 0
@@ -40,9 +39,9 @@ extension MuhaffezViewModel {
       if isBeginningOfAya(wordIndexInLine) {
         if quranModel.isEndOfSurah(currentLineIndex - 1) {
           add(separator: surahSeparator(ayaIndex: currentLineIndex))
-          if quranModel.isEndOfRub3(currentLineIndex - 1) {
-            add(separator: AttributedString("⭐ "))
-          }
+        }
+        if quranModel.isEndOfRub3(currentLineIndex - 1) {
+          add(separator: AttributedString("⭐ "))
         }
       }
       let attributedWord = attributedWord(for: word, matched: isMatched)
@@ -57,9 +56,6 @@ extension MuhaffezViewModel {
         add(separator: AttributedString("🌼 "))
         if quranModel.isEndOfSurah(currentLineIndex) {
           add(separator: "\n")
-        }
-        if quranModel.isEndOfRub3(currentLineIndex) && !quranModel.isEndOfSurah(currentLineIndex) {
-          add(separator: AttributedString("⭐ "))
         }
         advanceLine()
       }
@@ -91,7 +87,7 @@ extension MuhaffezViewModel {
   }
 
   private func surahSeparator(ayaIndex: Int) -> AttributedString {
-    let surahName = QuranModel.shared.surahName(forAyahIndex: ayaIndex)
+    let surahName = quranModel.surahNameFor(ayahIndex: ayaIndex)
     let separator = AttributedString("\n\t\t\t\t\t")
     var name = AttributedString("سورة \(surahName)")
     name.font = .custom("KFGQPC Uthmanic Script", size: 28)

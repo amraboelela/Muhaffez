@@ -88,7 +88,7 @@ struct QuranModelTests {
     }
   }
   
-  @Test("Test rub3Number(forAyahIndex:)")
+  @Test("Test rub3NumberFor(ayahIndex:)")
   func testRub3Number() async throws {
     let model = QuranModel.shared
     
@@ -96,10 +96,10 @@ struct QuranModelTests {
     print("model.quranLines[model.rub3Markers.first!]: \(model.quranLines[model.rub3Markers.first!])")
     // rub3Markers contains starting ayah indexes for each rub3
     if let firstRub3 = model.rub3Markers.first {
-      #expect(model.rub3Number(forAyahIndex: firstRub3) == 2)
+      #expect(model.rub3NumberFor(ayahIndex: firstRub3) == 2)
     } else if let lastRub3 = model.rub3Markers.last {
-      #expect(model.rub3Number(forAyahIndex: lastRub3) == 30)
-      #expect(model.rub3Number(forAyahIndex: lastRub3 + 10) == 30)
+      #expect(model.rub3NumberFor(ayahIndex: lastRub3) == 30)
+      #expect(model.rub3NumberFor(ayahIndex: lastRub3 + 10) == 30)
     }
   }
   
@@ -110,7 +110,7 @@ struct QuranModelTests {
     
     // Index after the last marker (e.g., ayah 180) should be in the last rub3 section
     let index = model.quranLines.count - 1
-    let result = model.rub3Number(forAyahIndex: index)
+    let result = model.rub3NumberFor(ayahIndex: index)
     
     // rub3Markers.count = 4, so last rub3 = 5
     #expect(result == model.rub3Markers.count + 1)
@@ -122,31 +122,31 @@ struct QuranModelTests {
     
     // Each juz = 8 rub3
     if let firstRub3 = model.rub3Markers.first {
-      #expect(model.juzNumber(forAyahIndex: firstRub3) == 1)
+      #expect(model.juzNumberFor(ayahIndex: firstRub3) == 1)
     }
     
     let fifthRub3 = model.rub3Markers[4]
-    #expect(model.juzNumber(forAyahIndex: fifthRub3) == 1)
+    #expect(model.juzNumberFor(ayahIndex: fifthRub3) == 1)
     let eighthRub3 = model.rub3Markers[7]
-    #expect(model.juzNumber(forAyahIndex: eighthRub3) == 2)
+    #expect(model.juzNumberFor(ayahIndex: eighthRub3) == 2)
     let ninthRub3 = model.rub3Markers[8]
-    #expect(model.juzNumber(forAyahIndex: ninthRub3) == 2)
+    #expect(model.juzNumberFor(ayahIndex: ninthRub3) == 2)
   }
   
   @Test func testSurahNameValidPages() {
     let model = QuranModel.shared
     
     // Test a page in the middle of Surah Al-Baqara
-    let page49Surah = model.surahName(forPage: 49)
+    let page49Surah = model.surahNameFor(page: 49)
     #expect(page49Surah == "البقرة")
     
     // Test first page → should be Al-Fatiha
-    let firstPageSurah = model.surahName(forPage: 1)
+    let firstPageSurah = model.surahNameFor(page: 1)
     #expect(firstPageSurah == "الفاتحة")
     
     // Test last page → should return the last surah
     let lastPage = 604 // Madinah Mushaf last page
-    let lastSurah = model.surahName(forPage: lastPage)
+    let lastSurah = model.surahNameFor(page: lastPage)
     #expect(lastSurah == "الناس")
   }
   
@@ -154,11 +154,11 @@ struct QuranModelTests {
     let model = QuranModel.shared
     
     // Page 0 is invalid → should return empty string
-    let zeroPage = model.surahName(forPage: 0)
+    let zeroPage = model.surahNameFor(page: 0)
     #expect(zeroPage == "")
     
     // Negative page → should return empty string
-    let negativePage = model.surahName(forPage: -5)
+    let negativePage = model.surahNameFor(page: -5)
     #expect(negativePage == "")
   }
   
@@ -166,14 +166,14 @@ struct QuranModelTests {
     let model = QuranModel.shared
     
     // Page exactly at the start of a surah
-    let nameOfSurah3 = model.surahName(forPage: model.surahs[2].startPage)
+    let nameOfSurah3 = model.surahNameFor(page: model.surahs[2].startPage)
     #expect(nameOfSurah3 == "آل عمران")
     
     // Page just before the start of the next surah
-    let nameBeforeNextSurah = model.surahName(forPage: model.surahs[3].startPage - 1)
+    let nameBeforeNextSurah = model.surahNameFor(page: model.surahs[3].startPage - 1)
     #expect(nameBeforeNextSurah == "آل عمران")
     
-    let lastSurahName = model.surahName(forPage: 1000)
+    let lastSurahName = model.surahNameFor(page: 1000)
     #expect(lastSurahName == "الناس")
   }
   
@@ -181,25 +181,25 @@ struct QuranModelTests {
     let model = QuranModel.shared
     
     // 1. First ayah should be in Al-Fatihah
-    let firstAyahSurah = model.surahName(forAyahIndex: 0)
+    let firstAyahSurah = model.surahNameFor(ayahIndex: 0)
     #expect(firstAyahSurah == "الفاتحة")
     
     // 2. Some ayah in the middle of آل عمران
     let middleBaqarahIndex = model.surahMarkers[1] + 10 // second surah start + offset
-    let middleBaqarahSurah = model.surahName(forAyahIndex: middleBaqarahIndex)
+    let middleBaqarahSurah = model.surahNameFor(ayahIndex: middleBaqarahIndex)
     #expect(middleBaqarahSurah == "آل عمران")
     
     // 3. Last ayah should correspond to last surah
     let lastAyahIndex = model.quranLines.count - 1
-    let lastSurah = model.surahName(forAyahIndex: lastAyahIndex)
+    let lastSurah = model.surahNameFor(ayahIndex: lastAyahIndex)
     #expect(lastSurah == "الناس")
     
     // 4. Out-of-bounds negative index
-    let negativeIndexSurah = model.surahName(forAyahIndex: -1)
+    let negativeIndexSurah = model.surahNameFor(ayahIndex: -1)
     #expect(negativeIndexSurah.isEmpty)
     
     // 5. Out-of-bounds too large index
-    let tooLargeIndexSurah = model.surahName(forAyahIndex: model.quranLines.count)
+    let tooLargeIndexSurah = model.surahNameFor(ayahIndex: model.quranLines.count)
     #expect(tooLargeIndexSurah.isEmpty)
   }
   

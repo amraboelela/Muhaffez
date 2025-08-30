@@ -185,14 +185,14 @@ class QuranModel {
   }
   
   /// Returns the rub3 number for the given ayah index
-  func rub3Number(forAyahIndex index: Int) -> Int {
-    guard !rub3Markers.isEmpty, index >= 0, index < quranLines.count else {
+  func rub3NumberFor(ayahIndex: Int) -> Int {
+    guard !rub3Markers.isEmpty, ayahIndex >= 0, ayahIndex < quranLines.count else {
       return 0
     }
     
     // Find the first rub3 marker greater than the index → that's the next rub3 start
     for (rub3Index, marker) in rub3Markers.enumerated() {
-      if index < marker {
+      if ayahIndex < marker {
         return rub3Index + 1 // Rub3 sections are usually 1-based
       }
     }
@@ -202,13 +202,13 @@ class QuranModel {
   }
   
   /// Returns the juz number for the given ayah index
-  func juzNumber(forAyahIndex index: Int) -> Int {
-    let rub3Num = rub3Number(forAyahIndex: index)
+  func juzNumberFor(ayahIndex: Int) -> Int {
+    let rub3Num = rub3NumberFor(ayahIndex: ayahIndex)
     // Each juz = 4 rub3 → use ceil to handle partials correctly
     return Int(ceil(Double(rub3Num) / 8.0))
   }
   
-  func surahName(forPage page: Int) -> String {
+  func surahNameFor(page: Int) -> String {
     guard page >= 1 else { return "" }
     for i in (0..<surahs.count).reversed() {
       if page >= surahs[i].startPage {
@@ -219,7 +219,7 @@ class QuranModel {
   }
   
   /// Returns the surah name for a given ayah index in quranLines
-  func surahName(forAyahIndex ayahIndex: Int) -> String {
+  func surahNameFor(ayahIndex: Int) -> String {
     guard !surahMarkers.isEmpty, ayahIndex >= 0, ayahIndex < quranLines.count else {
       return ""
     }
@@ -243,12 +243,12 @@ class QuranModel {
   
   func updatePages(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
     if isRightPage(forAyahIndex: index) {
-      viewModel.tempRightPage.juzNumber = juzNumber(forAyahIndex: index)
-      viewModel.tempRightPage.surahName = surahName(forAyahIndex: index)
+      viewModel.tempRightPage.juzNumber = juzNumberFor(ayahIndex: index)
+      viewModel.tempRightPage.surahName = surahNameFor(ayahIndex: index)
       viewModel.tempRightPage.pageNumber = pageNumber(forAyahIndex: index)
     } else {
-      viewModel.tempLeftPage.juzNumber = juzNumber(forAyahIndex: index)
-      viewModel.tempLeftPage.surahName = surahName(forAyahIndex: index)
+      viewModel.tempLeftPage.juzNumber = juzNumberFor(ayahIndex: index)
+      viewModel.tempLeftPage.surahName = surahNameFor(ayahIndex: index)
       viewModel.tempLeftPage.pageNumber = pageNumber(forAyahIndex: index)
     }
     viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)

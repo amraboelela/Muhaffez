@@ -52,6 +52,12 @@ struct MuhaffezView: View {
       viewModel.voiceText = newValue
     }
     .onAppear {
+      // Use this for testing rub3 mark before
+      //viewModel.voiceText = "ذٰلِكَ بِأَنَّ اللَّهَ نَزَّلَ الكِتابَ بِالحَقِّ وَإِنَّ الَّذينَ اختَلَفوا فِي الكِتابِ لَفي شِقاقٍ بَعيدٍ"
+
+      // Use this for testing rub3 mark and after
+      //viewModel.voiceText = "لَيسَ البِرَّ أَن تُوَلّوا وُجوهَكُم قِبَلَ المَشرِقِ وَالمَغرِبِ"
+
       // Use this for testing changing page content
 //      viewModel.voiceText = "إِنَّ الَّذينَ كَفَروا سَواءٌ عَلَيهِم أَأَنذَرتَهُم أَم لَم تُنذِرهُم لا يُؤمِنونَ"
 //      Task {
