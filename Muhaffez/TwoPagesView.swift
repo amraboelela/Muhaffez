@@ -42,7 +42,23 @@ struct TwoPagesView: View {
         //          try? await Task.sleep(for: .seconds(2))
         //          viewModel.currentPageIsRight = true
         //        }
-
+        
+        // Use for testing displaying surah Alfateha
+//        viewModel.voiceText = "الحَمدُ لِلَّهِ رَبِّ العالَمينَ"
+//        Task {
+//          try? await Task.sleep(for: .seconds(0.2))
+//          viewModel.voiceText = """
+//              الحَمدُ لِلَّهِ رَبِّ العالَمينَ
+//              الرَّحمٰنِ الرَّحيمِ
+//              مالِكِ يَومِ الدّينِ
+//              إِيّاكَ نَعبُدُ وَإِيّاكَ نَستَعينُ
+//              اهدِنَا الصِّراطَ المُستَقيمَ
+//              صِراطَ الَّذينَ أَنعَمتَ عَلَيهِم غَيرِ المَغضوبِ عَلَيهِم وَلَا الضّالّينَ
+//              
+//              -
+//              الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ
+//              """
+//        }
       }
     }
   }

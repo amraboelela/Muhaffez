@@ -53,7 +53,7 @@ struct MuhaffezView: View {
     }
     .onAppear {
       // Use this for testing rub3 mark before
-      //viewModel.voiceText = "ذٰلِكَ بِأَنَّ اللَّهَ نَزَّلَ الكِتابَ بِالحَقِّ وَإِنَّ الَّذينَ اختَلَفوا فِي الكِتابِ لَفي شِقاقٍ بَعيدٍ"
+//      viewModel.voiceText = "ذٰلِكَ بِأَنَّ اللَّهَ نَزَّلَ الكِتابَ بِالحَقِّ وَإِنَّ الَّذينَ اختَلَفوا فِي الكِتابِ لَفي شِقاقٍ بَعيدٍ"
 
       // Use this for testing rub3 mark and after
       //viewModel.voiceText = "لَيسَ البِرَّ أَن تُوَلّوا وُجوهَكُم قِبَلَ المَشرِقِ وَالمَغرِبِ"
@@ -77,7 +77,7 @@ struct MuhaffezView: View {
 //                  """
 //      }
 
-      // Use for testing displaying surah name
+      // Use for testing displaying surah Alfateha
 //      viewModel.voiceText = "الحَمدُ لِلَّهِ رَبِّ العالَمينَ"
 //      Task {
 //        try? await Task.sleep(for: .seconds(0.2))
