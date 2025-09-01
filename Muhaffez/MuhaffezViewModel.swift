@@ -193,7 +193,7 @@ class MuhaffezViewModel {
     _ voiceWord: String,
     _ results: inout [(String, Bool)]
   ) -> Bool {
-    for step in 1...3 {
+    for step in 1...4 {
       guard index - step >= 0 else { break }
       let qWord = quranWords[index - step]
       if voiceWord.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
