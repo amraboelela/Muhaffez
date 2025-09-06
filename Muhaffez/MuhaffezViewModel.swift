@@ -26,13 +26,17 @@ class MuhaffezViewModel {
   }
   
   var isRecording = false
-  var matchedWords: [(String, Bool)] = [] {
+  var matchedWords: [(word: String, isMatched: Bool)] = [] {
     didSet {
       updatePages()
     }
   }
-  var foundAyat = [Int]()
-  
+  var foundAyat = [Int]() {
+    didSet {
+      pageCurrentLineIndex = foundAyat.first ?? 0
+    }
+  }
+
   var quranText = "" {
     didSet {
       quranWords = quranText.split(separator: " ").map { String($0) }
@@ -41,22 +45,18 @@ class MuhaffezViewModel {
   
   var quranWords = [String]()
   var voiceWords = [String]()
-  var tempRightPage = PageModel()
-  var tempLeftPage = PageModel()
+  var tempPage = PageModel()
   var rightPage = PageModel()
   var leftPage = PageModel()
   var currentPageIsRight = true {
     didSet {
-      if currentPageIsRight {
-        withAnimation {
-          tempLeftPage.reset()
-        }
-      }
       if !oldValue && currentPageIsRight {
         rightPage.reset()
       }
     }
   }
+  var pageCurrentLineIndex = 0
+  var pageMatchedWordsIndex = 0
 
   let quranModel = QuranModel.shared
   let quranLines = QuranModel.shared.quranLines
@@ -77,10 +77,11 @@ class MuhaffezViewModel {
     matchedWords = []
     voiceText = ""
     currentPageIsRight = true
-    tempRightPage.reset()
-    tempLeftPage.reset()
+    tempPage.reset()
     rightPage.reset()
     leftPage.reset()
+    pageCurrentLineIndex = 0
+    pageMatchedWordsIndex = 0
   }
   
   // MARK: - Aya Matching

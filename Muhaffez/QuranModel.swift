@@ -242,15 +242,9 @@ class QuranModel {
   }
   
   func updatePages(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
-    if isRightPage(forAyahIndex: index) {
-      viewModel.tempRightPage.juzNumber = juzNumberFor(ayahIndex: index)
-      viewModel.tempRightPage.surahName = surahNameFor(ayahIndex: index)
-      viewModel.tempRightPage.pageNumber = pageNumber(forAyahIndex: index)
-    } else {
-      viewModel.tempLeftPage.juzNumber = juzNumberFor(ayahIndex: index)
-      viewModel.tempLeftPage.surahName = surahNameFor(ayahIndex: index)
-      viewModel.tempLeftPage.pageNumber = pageNumber(forAyahIndex: index)
-    }
+    viewModel.tempPage.juzNumber = juzNumberFor(ayahIndex: index)
+    viewModel.tempPage.surahName = surahNameFor(ayahIndex: index)
+    viewModel.tempPage.pageNumber = pageNumber(forAyahIndex: index)
     viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)
   }
   
@@ -258,8 +252,7 @@ class QuranModel {
     if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
       updatePages(viewModel: viewModel, ayahIndex: index)
       if viewModel.currentPageIsRight {
-        viewModel.tempRightPage.text = AttributedString()
-        viewModel.tempLeftPage.text = AttributedString()
+        viewModel.leftPage.text = AttributedString()
       }
     }
   }

@@ -67,7 +67,7 @@ struct MuhaffezViewModelTwoPagesTests {
     viewModel.resetData()
     viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
     textString = viewModel.rightPage.textString
-    #expect(textString.contains("⭐"))
+    #expect(textString.contains("🌼"))
     
     viewModel.resetData()
     viewModel.voiceText = "نحن جعلناها تذكرة"

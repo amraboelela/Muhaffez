@@ -10,31 +10,37 @@ import SwiftUI
 extension MuhaffezViewModel {
 
   func updatePages() {
-    tempRightPage.text = AttributedString()
-    tempLeftPage.text = AttributedString()
-
-    guard let firstIndex = foundAyat.first else { return }
-
-    var currentLineIndex = firstIndex
+    guard pageMatchedWordsIndex < matchedWords.count else {
+      return
+    }
+    tempPage.text = AttributedString()
+    var currentLineIndex = pageCurrentLineIndex
     var wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
     var wordIndexInLine = 0
+    let matchedWordsIndex = pageMatchedWordsIndex
 
     func advanceLine() {
+      if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+        rightPage = tempPage
+      } else {
+        leftPage = tempPage
+      }
       currentLineIndex += 1
       wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
       wordIndexInLine = 0
     }
 
     func add(separator: AttributedString) {
-      if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-        tempRightPage.text += separator
-      } else {
-        tempLeftPage.text += separator
-      }
+      tempPage.text += separator
     }
 
     quranModel.updatePages(viewModel: self, ayahIndex: currentLineIndex)
-    for (_, (word, isMatched)) in matchedWords.enumerated() {
+    for i in (matchedWordsIndex..<matchedWords.count) {
+      if currentPageIsRight != quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+        pageCurrentLineIndex = currentLineIndex
+        pageMatchedWordsIndex = i
+        tempPage.text = AttributedString()
+      }
       quranModel.updatePageModelsIfNeeded(viewModel: self, ayahIndex: currentLineIndex)
       if isBeginningOfAya(wordIndexInLine) {
         if quranModel.isEndOfSurah(currentLineIndex - 1) {
@@ -44,12 +50,8 @@ extension MuhaffezViewModel {
           add(separator: AttributedString("⭐ "))
         }
       }
-      let attributedWord = attributedWord(for: word, matched: isMatched)
-      if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-        tempRightPage.text += attributedWord
-      } else {
-        tempLeftPage.text += attributedWord
-      }
+      let attributedWord = attributedWord(for: matchedWords[i].word, matched: matchedWords[i].isMatched)
+      tempPage.text += attributedWord
       wordIndexInLine += 1
       add(separator: " ")
       if isEndOfAya(wordIndexInLine, wordsInCurrentLine.count) {
@@ -60,8 +62,11 @@ extension MuhaffezViewModel {
         advanceLine()
       }
     }
-    rightPage = tempRightPage
-    leftPage = tempLeftPage
+    if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+      rightPage = tempPage
+    } else {
+      leftPage = tempPage
+    }
   }
 
   // MARK: - Helpers
@@ -69,7 +74,7 @@ extension MuhaffezViewModel {
   private func attributedWord(for word: String, matched: Bool) -> AttributedString {
     var attributedWord = AttributedString(word)
     attributedWord.foregroundColor = matched ? .primary : .red
-    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 32)
+    attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 30)
     return attributedWord
   }
 
@@ -90,7 +95,7 @@ extension MuhaffezViewModel {
     let surahName = quranModel.surahNameFor(ayahIndex: ayaIndex)
     let separator = AttributedString("\n\t\t\t\t\t")
     var name = AttributedString("سورة \(surahName)")
-    name.font = .custom("KFGQPC Uthmanic Script", size: 28)
+    name.font = .custom("KFGQPC Uthmanic Script", size: 30)
     name.underlineStyle = Text.LineStyle.single
     let separator2 = AttributedString("\n\n")
     return separator + name + separator2
