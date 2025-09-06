@@ -152,43 +152,44 @@ class MuhaffezViewModel {
   }
   
   // MARK: - Word Matching
-  
+
   func updateMatchedWords() {
-    guard foundAyat.count == 1 else { return }
-    
-    peekTimer?.invalidate()
-    peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-      Task { @MainActor in self?.peekHelper() }
-    }
-    
-    var results: [(String, Bool)] = []
-    var quranWordsIndex = -1
-    
-    //print("voiceWords: \(voiceWords)")
-    for voiceWord in voiceWords {
-      quranWordsIndex += 1
-      guard quranWordsIndex < quranWords.count else { break }
-      
-      let qWord = quranWords[quranWordsIndex]
-      let normQWord = qWord.normalizedArabic
-      let score = voiceWord.similarity(to: normQWord)
-      
-      // Direct match
-      if score >= matchThreshold {
-        results.append((qWord, true))
-        continue
+      guard foundAyat.count == 1 else { return }
+
+      peekTimer?.invalidate()
+      peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+          Task { @MainActor in self?.peekHelper() }
       }
-      
-      // Try backward and forward search
-      if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
-      if tryForwardMatch(&quranWordsIndex, voiceWord, &results) { continue }
-      
-      results.append((quranWords[quranWordsIndex], true))
-    }
-    matchedWords = results
-    //print("matchedWords: \(matchedWords)")
+
+      var results: [(String, Bool)] = matchedWords   // start with previous results
+      var quranWordsIndex = results.count - 1  // continue from last matched index
+      var voiceIndex = results.count            // resume at the same position
+
+      while voiceIndex < voiceWords.count {
+          let voiceWord = voiceWords[voiceIndex]
+          quranWordsIndex += 1
+          guard quranWordsIndex < quranWords.count else { break }
+
+          let qWord = quranWords[quranWordsIndex]
+          let normQWord = qWord.normalizedArabic
+          let score = voiceWord.similarity(to: normQWord)
+
+          if score >= matchThreshold {
+              results.append((qWord, true))
+          } else if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) {
+              // matched in backward search
+          } else if tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
+              // matched in forward search
+          } else {
+              // mark as unmatched
+              results.append((qWord, true))
+          }
+          voiceIndex += 1
+      }
+
+      matchedWords = results
   }
-  
+
   private func tryBackwardMatch(
     _ index: inout Int,
     _ voiceWord: String,
