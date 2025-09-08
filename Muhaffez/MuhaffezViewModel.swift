@@ -12,9 +12,9 @@ import SwiftUI
 @MainActor
 @Observable
 class MuhaffezViewModel {
-  
+
   // MARK: - Public Properties
-  
+
   var voiceText = "" {
     didSet {
       voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
@@ -24,7 +24,7 @@ class MuhaffezViewModel {
       }
     }
   }
-  
+
   var isRecording = false
   var matchedWords: [(word: String, isMatched: Bool)] = [] {
     didSet {
@@ -42,7 +42,7 @@ class MuhaffezViewModel {
       quranWords = quranText.split(separator: " ").map { String($0) }
     }
   }
-  
+
   var quranWords = [String]()
   var voiceWords = [String]()
   var tempPage = PageModel()
@@ -57,20 +57,21 @@ class MuhaffezViewModel {
   }
   var pageCurrentLineIndex = 0
   var pageMatchedWordsIndex = 0
+  //var quranWordsIndex = -1
 
   let quranModel = QuranModel.shared
   let quranLines = QuranModel.shared.quranLines
 
   // MARK: - Private Properties
-  
+
   private let synthesizer = AVSpeechSynthesizer()
   private var debounceTimer: Timer?
   private var peekTimer: Timer?
-  private let matchThreshold = 0.6
-  private let seekMatchThreshold = 0.7
-  
+  private let matchThreshold = 0.7
+  private let seekMatchThreshold = 0.8
+
   // MARK: - Public Actions
-  
+
   func resetData() {
     foundAyat.removeAll()
     quranText = ""
@@ -82,24 +83,25 @@ class MuhaffezViewModel {
     leftPage.reset()
     pageCurrentLineIndex = 0
     pageMatchedWordsIndex = 0
+    //quranWordsIndex = -1
   }
-  
+
   // MARK: - Aya Matching
-  
+
   private func updateFoundAyat() {
     guard foundAyat.count != 1 else { return }
-    
+
     foundAyat.removeAll()
     let normVoice = voiceText.normalizedArabic
     guard !normVoice.isEmpty else { return }
-    
+
     // Fast prefix check
     for (index, line) in quranLines.enumerated() {
       if line.normalizedArabic.hasPrefix(normVoice) {
         foundAyat.append(index)
       }
     }
-    
+
     // Fallback with debounce if no matches
     if foundAyat.isEmpty {
       debounceTimer?.invalidate()
@@ -109,40 +111,40 @@ class MuhaffezViewModel {
         }
       }
     }
-    
+
     print("#quran foundAyat: \(foundAyat)")
     updateQuranText()
   }
-  
+
   private func performFallbackMatch(normVoice: String) {
     var bestIndex: Int?
     var bestScore = 0.0
-    
+
     for (index, line) in quranLines.enumerated() {
       let lineNorm = line.normalizedArabic
       guard lineNorm.count >= normVoice.count else { continue }
-      
+
       let prefix = String(lineNorm.prefix(normVoice.count + 2))
       let score = normVoice.similarity(to: prefix)
-      
+
       if score > bestScore {
         bestScore = score
         bestIndex = index
       }
       if score > 0.9 { break }
     }
-    
+
     if let bestIndex {
       foundAyat = [bestIndex]
       updateQuranText()
       updateMatchedWords()
     }
   }
-  
+
   private func updateQuranText() {
     if let firstIndex = foundAyat.first {
       quranText = quranLines[firstIndex]
-      
+
       if foundAyat.count == 1 {
         let endIndex = min(firstIndex + 200, quranLines.count)
         let extraLines = quranLines[(firstIndex + 1)..<endIndex]
@@ -150,44 +152,49 @@ class MuhaffezViewModel {
       }
     }
   }
-  
+
   // MARK: - Word Matching
 
   func updateMatchedWords() {
-      guard foundAyat.count == 1 else { return }
+    guard foundAyat.count == 1 else { return }
 
-      peekTimer?.invalidate()
-      peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-          Task { @MainActor in self?.peekHelper() }
+    peekTimer?.invalidate()
+    peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+      Task { @MainActor in self?.peekHelper() }
+    }
+
+    if matchedWords.count > 10 {
+      matchedWords.removeLast(10)
+    }
+    var results: [(String, Bool)] = matchedWords   // start with previous results
+    //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
+    var quranWordsIndex = results.count - 1  // continue from last matched index
+    var voiceIndex = results.count            // resume at the same position
+    print("voiceWords: \(voiceWords)")
+    while voiceIndex < voiceWords.count {
+      let voiceWord = voiceWords[voiceIndex]
+      quranWordsIndex += 1
+      guard quranWordsIndex < quranWords.count else { break }
+
+      let qWord = quranWords[quranWordsIndex]
+      let normQWord = qWord.normalizedArabic
+      let score = voiceWord.similarity(to: normQWord)
+
+      if score >= matchThreshold {
+        results.append((qWord, true))
+      } else if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) {
+        // matched in backward search
+      } else if tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
+        // matched in forward search
+      } else {
+        print("unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
+        // mark as unmatched
+        results.append((qWord, false))
       }
-
-      var results: [(String, Bool)] = matchedWords   // start with previous results
-      var quranWordsIndex = results.count - 1  // continue from last matched index
-      var voiceIndex = results.count            // resume at the same position
-
-      while voiceIndex < voiceWords.count {
-          let voiceWord = voiceWords[voiceIndex]
-          quranWordsIndex += 1
-          guard quranWordsIndex < quranWords.count else { break }
-
-          let qWord = quranWords[quranWordsIndex]
-          let normQWord = qWord.normalizedArabic
-          let score = voiceWord.similarity(to: normQWord)
-
-          if score >= matchThreshold {
-              results.append((qWord, true))
-          } else if tryBackwardMatch(&quranWordsIndex, voiceWord, &results) {
-              // matched in backward search
-          } else if tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
-              // matched in forward search
-          } else {
-              // mark as unmatched
-              results.append((qWord, true))
-          }
-          voiceIndex += 1
-      }
-
-      matchedWords = results
+      voiceIndex += 1
+    }
+    matchedWords = results
+    //print("matchedWords = results, voiceWord, quranWordsIndex: \(quranWordsIndex)")
   }
 
   private func tryBackwardMatch(
@@ -195,53 +202,55 @@ class MuhaffezViewModel {
     _ voiceWord: String,
     _ results: inout [(String, Bool)]
   ) -> Bool {
-    for step in 1...4 {
+    for step in 1...10 {
       guard index - step >= 0 else { break }
       let qWord = quranWords[index - step]
       if voiceWord.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
         index -= step
         results.removeLast(step)
         results.append((qWord, true))
+        print("tryBackwardMatch, voiceWord: \(voiceWord), qWord: \(qWord)")
         return true
       }
     }
     return false
   }
-  
+
   private func tryForwardMatch(
     _ index: inout Int,
-    _ voice: String,
+    _ voiceWord: String,
     _ results: inout [(String, Bool)]
   ) -> Bool {
-    for step in 1...3 {
+    for step in 1...10 {
       guard index + step < quranWords.count else { break }
       let qWord = quranWords[index + step]
-      if voice.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
+      if voiceWord.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
         results.append((quranWords[index], true))
         for s in 1..<step {
           results.append((quranWords[index + s], true))
         }
         index += step
         results.append((qWord, true))
+        print("tryForwardMatch, voiceWord: \(voiceWord), qWord: \(qWord)")
         return true
       }
     }
     return false
   }
-  
+
   // MARK: - Peek Helper
-  
+
   func peekHelper() {
     guard isRecording else { return }
-    
+
     var results = matchedWords
     let quranWordsIndex = matchedWords.count
-    
+
     if quranWordsIndex + 2 < quranWords.count {
       results.append((quranWords[quranWordsIndex], false))
       results.append((quranWords[quranWordsIndex + 1], false))
       matchedWords = results
     }
+    print("voiceWord, peekHelper")
   }
 }
-
