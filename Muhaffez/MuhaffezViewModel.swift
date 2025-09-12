@@ -67,7 +67,7 @@ class MuhaffezViewModel {
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
     private let matchThreshold = 0.7
-    private let seekMatchThreshold = 0.9
+    private let seekMatchThreshold = 0.8
 
     // MARK: - Public Actions
 
@@ -162,9 +162,9 @@ class MuhaffezViewModel {
             Task { @MainActor in self?.peekHelper() }
         }
 
-        /*if matchedWords.count > 5 {
-            matchedWords.removeLast(5)
-        }*/
+//        if matchedWords.count > 1 {
+//            matchedWords.removeLast(1)
+//        }
         var results: [(String, Bool)] = matchedWords   // start with previous results
         //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
         var quranWordsIndex = results.count - 1  // continue from last matched index
@@ -185,19 +185,17 @@ class MuhaffezViewModel {
             let score = voiceWord.similarity(to: normQWord)
             if score >= matchThreshold {
                 results.append((qWord, true))
-            } else if voiceWord.count > 4 { // ignore for short words
-                if tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
-                    // matched in forward search
-                } else if tryBackwardMatch(quranWordsIndex, voiceWord, results) {
+            } else if voiceWord.count > 3 { // ignore for short words
+                if tryBackwardMatch(quranWordsIndex, voiceWord, results) {
                     canAdvance = false
+                } else if tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
+                    // matched in forward search
                 } else {
                     print("unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
                     results.append((qWord, true))
                 }
             } else {
-                // mark as unmatched
                 canAdvance = false
-                //results.append((qWord, true))
             }
             voiceIndex += 1
         }
@@ -210,10 +208,10 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: [(String, Bool)]
     ) -> Bool {
-        for step in 1...10 {
+        for step in 1...7 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
                 //index -= step
                 //results.removeLast(step)
                 //results.append((qWord, true))
@@ -229,10 +227,10 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...10 {
+        for step in 1...7 {
             guard index + step < quranWords.count else { break }
             let qWord = quranWords[index + step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) > seekMatchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
                 results.append((quranWords[index], true))
                 for s in 1..<step {
                     results.append((quranWords[index + s], true))
