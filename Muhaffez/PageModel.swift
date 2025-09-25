@@ -8,18 +8,21 @@
 import SwiftUI
 
 struct PageModel {
-  var juzNumber = 0
-  var surahName = ""
-  var pageNumber = 0
-  var text = AttributedString()
-  
-  var textString: String {
-    String(text.characters)
-  }
-  mutating func reset() {
-    juzNumber = 0
-    surahName = ""
-    pageNumber = 0
-    text = AttributedString()
-  }
+    var juzNumber = 0
+    var surahName = ""
+    var pageNumber = 0
+    var text = AttributedString()
+    var isFirstPage = false
+
+    var textString: String {
+        String(text.characters)
+    }
+
+    mutating func reset() {
+        juzNumber = 0
+        surahName = ""
+        pageNumber = 0
+        text = AttributedString()
+        isFirstPage = false
+    }
 }
