@@ -31,6 +31,8 @@ class MuhaffezViewModel {
             updatePages()
         }
     }
+    var previousVoiceWordsCount = 0
+
     var foundAyat = [Int]() {
         didSet {
             pageCurrentLineIndex = foundAyat.first ?? 0
@@ -170,7 +172,7 @@ class MuhaffezViewModel {
         var results: [(String, Bool)] = matchedWords   // start with previous results
         //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
         var quranWordsIndex = results.count - 1  // continue from last matched index
-        var voiceIndex = results.count            // resume at the same position
+        var voiceIndex = previousVoiceWordsCount
 
         print("[\(Date().logTimestamp)] voiceWords: \(voiceWords)")
         var canAdvance = true
@@ -210,6 +212,7 @@ class MuhaffezViewModel {
             voiceIndex += 1
         }
         matchedWords = results
+        previousVoiceWordsCount = voiceWords.count
         //print("matchedWords = results, voiceWord, quranWordsIndex: \(quranWordsIndex)")
     }
 
@@ -221,7 +224,7 @@ class MuhaffezViewModel {
         for step in 1...7 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) == seekMatchThreshold {
                 //index -= step
                 //results.removeLast(step)
                 //results.append((qWord, true))

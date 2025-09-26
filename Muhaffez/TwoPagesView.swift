@@ -102,7 +102,7 @@ struct TwoPagesView: View {
                         Spacer()
                     }
                     Text(pageModel.text)
-                        .lineSpacing(10)
+                        .lineSpacing(8)
                         .minimumScaleFactor(0.5)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .environment(\.layoutDirection, .rightToLeft)
