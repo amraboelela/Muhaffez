@@ -85,6 +85,7 @@ class MuhaffezViewModel {
         leftPage.reset()
         pageCurrentLineIndex = 0
         pageMatchedWordsIndex = 0
+        previousVoiceWordsCount = 0
     }
 
     // MARK: - Aya Matching
@@ -172,7 +173,7 @@ class MuhaffezViewModel {
         var results: [(String, Bool)] = matchedWords   // start with previous results
         //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
         var quranWordsIndex = results.count - 1  // continue from last matched index
-        var voiceIndex = previousVoiceWordsCount
+        var voiceIndex = previousVoiceWordsCount > 0 ? previousVoiceWordsCount - 1 : previousVoiceWordsCount
 
         print("[\(Date().logTimestamp)] voiceWords: \(voiceWords)")
         var canAdvance = true
@@ -193,7 +194,7 @@ class MuhaffezViewModel {
             let normQWord = qWord.normalizedArabic
             let score = voiceWord.similarity(to: normQWord)
             if score >= matchThreshold {
-                print("score >= matchThreshold, voiceWord: \(voiceWord), qWord: \(qWord)")
+                print("Matched word, voiceWord: \(voiceWord), qWord: \(qWord)")
                 results.append((qWord, true))
             } else { //if voiceWord.count > 3 { // ignore for short words
                 if tryBackwardMatch(quranWordsIndex, voiceWord, results) {
@@ -201,8 +202,9 @@ class MuhaffezViewModel {
                 } else if voiceWord.count > 3 && tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
                     // matched in forward search
                 } else {
-                    print("unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
-                    results.append((qWord, true))
+                    print("Unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
+                    canAdvance = false
+                    //results.append((qWord, true))
                 }
             } /*else {
                 print("voiceWord.count <= 3, voiceWord: \(voiceWord), qWord: \(qWord)")
@@ -224,7 +226,7 @@ class MuhaffezViewModel {
         for step in 1...7 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) == seekMatchThreshold {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= 0.99 {
                 //index -= step
                 //results.removeLast(step)
                 //results.append((qWord, true))
