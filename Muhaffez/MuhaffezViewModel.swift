@@ -69,6 +69,7 @@ class MuhaffezViewModel {
     private var debounceTimer: Timer?
     private var peekTimer: Timer?
     private let matchThreshold = 0.7
+    private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
 
     // MARK: - Public Actions
@@ -202,9 +203,13 @@ class MuhaffezViewModel {
                 } else if voiceWord.count > 3 && tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
                     // matched in forward search
                 } else {
-                    print("Unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
-                    canAdvance = false
-                    //results.append((qWord, true))
+                    if score >= simiMatchThreshold {
+                        print("Simimatched, voiceWord: \(voiceWord), qWord: \(qWord)")
+                        results.append((qWord, true))
+                    } else {
+                        print("Unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
+                        canAdvance = false
+                    }
                 }
             } /*else {
                 print("voiceWord.count <= 3, voiceWord: \(voiceWord), qWord: \(qWord)")
@@ -223,10 +228,10 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: [(String, Bool)]
     ) -> Bool {
-        for step in 1...7 {
+        for step in 1...10 {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
-            if voiceWord.similarity(to: qWord.normalizedArabic) >= 0.99 {
+            if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
                 //index -= step
                 //results.removeLast(step)
                 //results.append((qWord, true))
@@ -242,7 +247,7 @@ class MuhaffezViewModel {
         _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...7 {
+        for step in 1...10 {
             guard index + step < quranWords.count else { break }
             let qWord = quranWords[index + step]
             if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
