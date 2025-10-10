@@ -40,9 +40,6 @@
 - 📅 **Progress Tracking**
   Track memorization progress, review history, and mastery levels for each section.
 
-- 🎯 **AI-Powered Embeddings**
-  SILMA Arabic Embedding v0.1 integration for semantic search and intelligent verse recommendations.
-
 ---
 
 ## 🛠️ Technology Stack

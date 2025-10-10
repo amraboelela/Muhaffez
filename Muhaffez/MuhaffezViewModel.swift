@@ -72,6 +72,10 @@ class MuhaffezViewModel {
     private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
 
+    private let initialForwardCount = 10
+    private let maxForwardCount = 100
+    private var forwardCount = initialForwardCount
+
     // MARK: - Public Actions
 
     func resetData() {
@@ -124,23 +128,44 @@ class MuhaffezViewModel {
         print("performFallbackMatch normVoice: \(normVoice)")
         var bestIndex: Int?
         var bestScore = 0.0
+        let threshold = 0.6  // Skip obviously bad matches
+        let voiceLen = normVoice.count
+        let maxLenDiff = voiceLen / 2  // Allow 50% length difference
 
         for (index, line) in quranLines.enumerated() {
             let lineNorm = line.normalizedArabic
+
+            // Skip if line is shorter than input
             guard lineNorm.count >= normVoice.count else { continue }
 
-            let prefix = String(lineNorm.prefix(normVoice.count + 2))
+            // Skip if length difference is too large
+            let prefix = String(lineNorm.prefix(voiceLen + 2))
+            if abs(prefix.count - voiceLen) > maxLenDiff {
+                continue
+            }
+
+            // Quick check: if first 3 characters don't match at all, skip Levenshtein
+            let prefixCheck = min(3, voiceLen)
+            let voicePrefix = String(normVoice.prefix(prefixCheck))
+            let linePrefix = String(prefix.prefix(prefixCheck))
+            if voicePrefix.similarity(to: linePrefix) < 0.5 {
+                continue
+            }
+
+            // Now do full similarity check
             let score = normVoice.similarity(to: prefix)
 
             if score > bestScore {
                 bestScore = score
                 bestIndex = index
             }
-            if score > 0.9 { break }
+
+            // If we found a very good match, stop searching
+            if score > 0.95 { break }
         }
 
-        if let bestIndex {
-            print("performFallbackMatch bestIndex: \(bestIndex)")
+        if let bestIndex, bestScore >= threshold {
+            print("performFallbackMatch bestIndex: \(bestIndex), score: \(bestScore)")
             foundAyat = [bestIndex]
             updateQuranText()
             updateMatchedWords()
@@ -197,10 +222,13 @@ class MuhaffezViewModel {
             if score >= matchThreshold {
                 print("Matched word, voiceWord: \(voiceWord), qWord: \(qWord)")
                 results.append((qWord, true))
+                if forwardCount > initialForwardCount {
+                    forwardCount /= 2
+                }
             } else { //if voiceWord.count > 3 { // ignore for short words
                 if tryBackwardMatch(quranWordsIndex, voiceWord, results) {
                     canAdvance = false
-                } else if voiceWord.count > 3 && tryForwardMatch(&quranWordsIndex, voiceWord, &results) {
+                } else if voiceWord.count > 3 && tryForwardMatch(&quranWordsIndex, forwardCount, voiceWord, &results) {
                     // matched in forward search
                 } else {
                     if score >= simiMatchThreshold {
@@ -209,6 +237,7 @@ class MuhaffezViewModel {
                     } else {
                         print("Unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
                         canAdvance = false
+                        forwardCount = min(forwardCount * 2, maxForwardCount)
                     }
                 }
             } /*else {
@@ -232,9 +261,6 @@ class MuhaffezViewModel {
             guard index - step >= 0 else { break }
             let qWord = quranWords[index - step]
             if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {
-                //index -= step
-                //results.removeLast(step)
-                //results.append((qWord, true))
                 print("tryBackwardMatch, voiceWord: \(voiceWord), qWord: \(qWord)")
                 return true
             }
@@ -244,10 +270,11 @@ class MuhaffezViewModel {
 
     private func tryForwardMatch(
         _ index: inout Int,
+        _ count: Int,
         _ voiceWord: String,
         _ results: inout [(String, Bool)]
     ) -> Bool {
-        for step in 1...10 {
+        for step in 1...count {
             guard index + step < quranWords.count else { break }
             let qWord = quranWords[index + step]
             if voiceWord.similarity(to: qWord.normalizedArabic) >= seekMatchThreshold {

@@ -24,9 +24,24 @@
 		F5E1302E2E541CEF0020243D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F521F9112E9992A400BCD1CE /* Exceptions for "Muhaffez" folder in "Muhaffez" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				.claude/settings.local.json,
+				embed_quran.py,
+				read_embeddings.py,
+			);
+			target = F5B728732E53CDC600E7B4AC /* Muhaffez */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F5B728762E53CDC600E7B4AC /* Muhaffez */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F521F9112E9992A400BCD1CE /* Exceptions for "Muhaffez" folder in "Muhaffez" target */,
+			);
 			path = Muhaffez;
 			sourceTree = "<group>";
 		};

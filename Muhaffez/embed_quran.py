@@ -16,84 +16,66 @@ Creative Commons Attribution 3.0 license with proper attribution maintained.
 
 Model Requirements:
 -------------------
-This script requires the SILMA Arabic Embedding model to be downloaded first.
-You can download it using:
-    pip install huggingface-hub
-    huggingface-cli download silma-ai/SILMA-Embeddding-1.5B-Arabic-v0.1
+This script uses the all-MiniLM-L6-v2 model from sentence-transformers.
+Install requirements:
+    pip install sentence-transformers
 
 Alternative models that might work:
-- aubmindlab/bert-base-arabertv02
-- CAMeL-Lab/bert-base-arabic-camelbert-msa
-- sentence-transformers/paraphrase-multilingual-mpnet-base-v2
+- silma-ai/SILMA-Embeddding-1.5B-Arabic-v0.1 (Arabic-specific, larger)
+- aubmindlab/bert-base-arabertv02 (Arabic-specific)
+- sentence-transformers/paraphrase-multilingual-mpnet-base-v2 (larger multilingual)
 """
 
 import sys
 import torch
-from transformers import AutoTokenizer, AutoModel
+from sentence_transformers import SentenceTransformer
 import numpy as np
 import json
 from tqdm import tqdm
 
-# Model name for SILMA Arabic Embedding v0.1
-MODEL_NAME = "silma-ai/SILMA-Embeddding-1.5B-Arabic-v0.1"
+# Model name for Arabic embedding model
+MODEL_NAME = "SILMA-Lab/arabic-embedding-base"
 
-# Alternative models (uncomment if SILMA is not available)
+# Alternative models (uncomment to use)
+# MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# MODEL_NAME = "CAMeL-Lab/bert-base-arabic-camelbert-mix-sentiment"
+# MODEL_NAME = "silma-ai/SILMA-Embeddding-1.5B-Arabic-v0.1"
 # MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 # MODEL_NAME = "aubmindlab/bert-base-arabertv02"
 
 def load_model():
-    """Load SILMA Arabic Embedding model and tokenizer"""
+    """Load sentence-transformers model"""
     global MODEL_NAME
     print(f"Loading model: {MODEL_NAME}")
     try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, local_files_only=False)
-        model = AutoModel.from_pretrained(MODEL_NAME, local_files_only=False)
+        model = SentenceTransformer(MODEL_NAME)
     except Exception as e:
         print(f"\n⚠️  Error loading model: {e}")
         print("\nTrying alternative multilingual model...")
         MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
         print(f"Loading model: {MODEL_NAME}")
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        model = AutoModel.from_pretrained(MODEL_NAME)
+        model = SentenceTransformer(MODEL_NAME)
 
-    # Move to GPU if available
+    # Check device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    model.eval()
-
     print(f"Model loaded on {device}")
-    return tokenizer, model, device
+    return model
 
-def mean_pooling(model_output, attention_mask):
-    """Apply mean pooling to get sentence embeddings"""
-    token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
-def embed_text(text, tokenizer, model, device):
+def embed_text(text, model):
     """Generate embedding for a single text"""
-    if not text or text.strip() == "" or text.strip() == "-":
+    if not text or text.strip() == "" or text.strip() == "-" or text.strip() == "*":
         return None
 
-    # Tokenize
-    encoded_input = tokenizer(text, padding=True, truncation=True, return_tensors='pt', max_length=512)
-    encoded_input = {k: v.to(device) for k, v in encoded_input.items()}
-
-    # Generate embedding
-    with torch.no_grad():
-        model_output = model(**encoded_input)
-        embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
-        # Normalize embeddings
-        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-
-    return embeddings.cpu().numpy()[0]
+    # Generate embedding using sentence-transformers
+    embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+    return embedding
 
 def main():
     """Main function to process Quran text and generate embeddings"""
     input_file = "quran-simple-min.txt"
 
     # Load model first to determine output file names
-    tokenizer, model, device = load_model()
+    model = load_model()
 
     # Create output filenames based on actual model used
     model_safe_name = MODEL_NAME.replace("/", "_").replace("-", "_")
@@ -113,7 +95,7 @@ def main():
 
     for idx, line in enumerate(tqdm(lines, desc="Generating embeddings")):
         text = line.strip()
-        embedding = embed_text(text, tokenizer, model, device)
+        embedding = embed_text(text, model)
 
         if embedding is not None:
             embeddings.append(embedding)
