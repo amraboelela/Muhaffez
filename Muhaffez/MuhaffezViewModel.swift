@@ -71,10 +71,7 @@ class MuhaffezViewModel {
     private let matchThreshold = 0.7
     private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
-
-    private let initialForwardCount = 10
-    private let maxForwardCount = 100
-    private var forwardCount = initialForwardCount
+    private let forwardCount = 10
 
     // MARK: - Public Actions
 
@@ -191,11 +188,6 @@ class MuhaffezViewModel {
     func updateMatchedWords() {
         guard foundAyat.count == 1 else { return }
 
-        peekTimer?.invalidate()
-        peekTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: false) { [weak self] _ in
-            Task { @MainActor in self?.peekHelper() }
-        }
-
         var results: [(String, Bool)] = matchedWords   // start with previous results
         //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
         var quranWordsIndex = results.count - 1  // continue from last matched index
@@ -210,6 +202,10 @@ class MuhaffezViewModel {
             let voiceWord = voiceWords[voiceIndex]
             if canAdvance {
                 quranWordsIndex += 1
+                peekTimer?.invalidate()
+                peekTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+                    Task { @MainActor in self?.peekHelper() }
+                }
             }
             canAdvance = true
             guard quranWordsIndex < quranWords.count else {
@@ -222,9 +218,6 @@ class MuhaffezViewModel {
             if score >= matchThreshold {
                 print("Matched word, voiceWord: \(voiceWord), qWord: \(qWord)")
                 results.append((qWord, true))
-                if forwardCount > initialForwardCount {
-                    forwardCount /= 2
-                }
             } else { //if voiceWord.count > 3 { // ignore for short words
                 if tryBackwardMatch(quranWordsIndex, voiceWord, results) {
                     canAdvance = false
@@ -237,7 +230,6 @@ class MuhaffezViewModel {
                     } else {
                         print("Unmatched, voiceWord: \(voiceWord), qWord: \(qWord)")
                         canAdvance = false
-                        forwardCount = min(forwardCount * 2, maxForwardCount)
                     }
                 }
             } /*else {
