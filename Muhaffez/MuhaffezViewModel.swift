@@ -5,7 +5,6 @@
 //  Created by Amr Aboelela on 8/18/25.
 //
 
-import Speech
 import AVFoundation
 import SwiftUI
 
@@ -71,7 +70,7 @@ class MuhaffezViewModel {
     private let matchThreshold = 0.7
     private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
-    private let forwardCount = 10
+    private let forwardCount = 13
 
     // MARK: - Public Actions
 
@@ -125,44 +124,23 @@ class MuhaffezViewModel {
         print("performFallbackMatch normVoice: \(normVoice)")
         var bestIndex: Int?
         var bestScore = 0.0
-        let threshold = 0.6  // Skip obviously bad matches
-        let voiceLen = normVoice.count
-        let maxLenDiff = voiceLen / 2  // Allow 50% length difference
 
         for (index, line) in quranLines.enumerated() {
             let lineNorm = line.normalizedArabic
-
-            // Skip if line is shorter than input
             guard lineNorm.count >= normVoice.count else { continue }
 
-            // Skip if length difference is too large
-            let prefix = String(lineNorm.prefix(voiceLen + 2))
-            if abs(prefix.count - voiceLen) > maxLenDiff {
-                continue
-            }
-
-            // Quick check: if first 3 characters don't match at all, skip Levenshtein
-            let prefixCheck = min(3, voiceLen)
-            let voicePrefix = String(normVoice.prefix(prefixCheck))
-            let linePrefix = String(prefix.prefix(prefixCheck))
-            if voicePrefix.similarity(to: linePrefix) < 0.5 {
-                continue
-            }
-
-            // Now do full similarity check
+            let prefix = String(lineNorm.prefix(normVoice.count + 2))
             let score = normVoice.similarity(to: prefix)
 
             if score > bestScore {
                 bestScore = score
                 bestIndex = index
             }
-
-            // If we found a very good match, stop searching
-            if score > 0.95 { break }
+            if score > 0.9 { break }
         }
 
-        if let bestIndex, bestScore >= threshold {
-            print("performFallbackMatch bestIndex: \(bestIndex), score: \(bestScore)")
+        if let bestIndex {
+            print("performFallbackMatch bestIndex: \(bestIndex)")
             foundAyat = [bestIndex]
             updateQuranText()
             updateMatchedWords()
@@ -191,7 +169,7 @@ class MuhaffezViewModel {
         var results: [(String, Bool)] = matchedWords   // start with previous results
         //print("var results = matchedWords, voiceWord, quranWordsIndex: \(quranWordsIndex)")
         var quranWordsIndex = results.count - 1  // continue from last matched index
-        var voiceIndex = previousVoiceWordsCount > 0 ? previousVoiceWordsCount - 1 : previousVoiceWordsCount
+        var voiceIndex = previousVoiceWordsCount > 1 ? previousVoiceWordsCount - 2 : previousVoiceWordsCount
 
         print("[\(Date().logTimestamp)] voiceWords: \(voiceWords)")
         var canAdvance = true
@@ -278,6 +256,8 @@ class MuhaffezViewModel {
                 results.append((qWord, true))
                 print("tryForwardMatch, voiceWord: \(voiceWord), qWord: \(qWord)")
                 return true
+            } else {
+                print("tryForwardMatch no match, voiceWord: \(voiceWord), qWord: \(qWord)")
             }
         }
         return false

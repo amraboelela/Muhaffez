@@ -17,6 +17,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		F521F93B2E9EC01000BCD1CE /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		F55646302E5D658C009E02B8 /* icon-center.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = "icon-center.svg"; sourceTree = "<group>"; };
 		F5B728742E53CDC600E7B4AC /* Muhaffez.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Muhaffez.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -73,6 +74,7 @@
 		F5B7286B2E53CDC600E7B4AC = {
 			isa = PBXGroup;
 			children = (
+				F521F93B2E9EC01000BCD1CE /* CLAUDE.md */,
 				F5D2EFF12E5D19900052CB2D /* images */,
 				F5E1302E2E541CEF0020243D /* README.md */,
 				F5E1302D2E541CDB0020243D /* LICENSE */,
