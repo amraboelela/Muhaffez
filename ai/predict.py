@@ -15,16 +15,18 @@ class QuranPredictor:
         checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
         self.model = QuranMatcherModel(
             vocab_size=checkpoint['vocab_size'],
+            input_length=70,
+            hidden_size=512,
             output_size=checkpoint['output_size']
         )
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()
-        
-        print(f"Model loaded successfully\!")
+
+        print(f"Model loaded successfully!")
         print(f"Vocabulary size: {self.vocab_size}")
         print(f"Total ayat: {len(self.ayat)}")
     
-    def tokenize(self, text, max_length=100):
+    def tokenize(self, text, max_length=70):
         """Convert text to token indices"""
         tokens = []
         pad_token = self.vocabulary.get('<PAD>', 0)
@@ -85,13 +87,22 @@ def main():
         quran_path='../Muhaffez/quran-simple-min.txt'
     )
     
-    # Test with sample inputs
-    test_inputs = [
-        'بسم الله',
-        'الحمد لله',
-        'قل هو الله',
-        'الله لا اله الا هو',
-    ]
+    # Load test inputs from file
+    test_inputs = []
+    try:
+        with open('test_inputs.txt', 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comments
+                if line and not line.startswith('#'):
+                    test_inputs.append(line)
+    except FileNotFoundError:
+        print("Warning: test_inputs.txt not found, using default test inputs")
+        test_inputs = [
+            'بِسمِ اللَّهِ الرَّحمٰنِ',
+            'الحَمدُ لِلَّهِ رَبِّ العالَمينَ',
+            'قُل هُوَ اللَّهُ أَحَدٌ',
+        ]
     
     print("\n" + "="*60)
     print("Testing Quran Ayah Predictor")

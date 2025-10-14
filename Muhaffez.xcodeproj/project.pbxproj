@@ -18,6 +18,20 @@
 
 /* Begin PBXFileReference section */
 		F521F93B2E9EC01000BCD1CE /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
+		F521F93C2E9EE9FF00BCD1CE /* model.cpython-39.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = "model.cpython-39.pyc"; sourceTree = "<group>"; };
+		F521F93E2E9EE9FF00BCD1CE /* model.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = model.py; sourceTree = "<group>"; };
+		F521F93F2E9EE9FF00BCD1CE /* predict.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = predict.py; sourceTree = "<group>"; };
+		F521F9402E9EE9FF00BCD1CE /* quran_matcher_model.pth */ = {isa = PBXFileReference; lastKnownFileType = file; path = quran_matcher_model.pth; sourceTree = "<group>"; };
+		F521F9412E9EE9FF00BCD1CE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		F521F9422E9EE9FF00BCD1CE /* train.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = train.py; sourceTree = "<group>"; };
+		F521F9432E9EE9FF00BCD1CE /* vocabulary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vocabulary.json; sourceTree = "<group>"; };
+		F521F9452E9EF92700BCD1CE /* convert_model.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = convert_model.py; sourceTree = "<group>"; };
+		F521F9462E9EF92700BCD1CE /* test_maeda.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = test_maeda.py; sourceTree = "<group>"; };
+		F521F9472E9EF92700BCD1CE /* training_inputs.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = training_inputs.txt; sourceTree = "<group>"; };
+		F521F9482E9F04ED00BCD1CE /* generate_all_training_inputs.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = generate_all_training_inputs.py; sourceTree = "<group>"; };
+		F521F9492E9F04ED00BCD1CE /* generate_clean_training_inputs.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = generate_clean_training_inputs.py; sourceTree = "<group>"; };
+		F521F94A2E9F04FB00BCD1CE /* training_inputs_all.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = training_inputs_all.txt; sourceTree = "<group>"; };
+		F521F94B2E9F04FB00BCD1CE /* training_inputs_clean.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = training_inputs_clean.txt; sourceTree = "<group>"; };
 		F55646302E5D658C009E02B8 /* icon-center.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = "icon-center.svg"; sourceTree = "<group>"; };
 		F5B728742E53CDC600E7B4AC /* Muhaffez.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Muhaffez.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,9 +85,39 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F521F93D2E9EE9FF00BCD1CE /* __pycache__ */ = {
+			isa = PBXGroup;
+			children = (
+				F521F93C2E9EE9FF00BCD1CE /* model.cpython-39.pyc */,
+			);
+			path = __pycache__;
+			sourceTree = "<group>";
+		};
+		F521F9442E9EE9FF00BCD1CE /* ai */ = {
+			isa = PBXGroup;
+			children = (
+				F521F94A2E9F04FB00BCD1CE /* training_inputs_all.txt */,
+				F521F94B2E9F04FB00BCD1CE /* training_inputs_clean.txt */,
+				F521F9482E9F04ED00BCD1CE /* generate_all_training_inputs.py */,
+				F521F9492E9F04ED00BCD1CE /* generate_clean_training_inputs.py */,
+				F521F9452E9EF92700BCD1CE /* convert_model.py */,
+				F521F9462E9EF92700BCD1CE /* test_maeda.py */,
+				F521F9472E9EF92700BCD1CE /* training_inputs.txt */,
+				F521F93D2E9EE9FF00BCD1CE /* __pycache__ */,
+				F521F93E2E9EE9FF00BCD1CE /* model.py */,
+				F521F93F2E9EE9FF00BCD1CE /* predict.py */,
+				F521F9402E9EE9FF00BCD1CE /* quran_matcher_model.pth */,
+				F521F9412E9EE9FF00BCD1CE /* README.md */,
+				F521F9422E9EE9FF00BCD1CE /* train.py */,
+				F521F9432E9EE9FF00BCD1CE /* vocabulary.json */,
+			);
+			path = ai;
+			sourceTree = "<group>";
+		};
 		F5B7286B2E53CDC600E7B4AC = {
 			isa = PBXGroup;
 			children = (
+				F521F9442E9EE9FF00BCD1CE /* ai */,
 				F521F93B2E9EC01000BCD1CE /* CLAUDE.md */,
 				F5D2EFF12E5D19900052CB2D /* images */,
 				F5E1302E2E541CEF0020243D /* README.md */,

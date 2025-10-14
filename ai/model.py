@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 class QuranAyahDataset(Dataset):
-    def __init__(self, ayat_list, vocabulary, max_length=100):
+    def __init__(self, ayat_list, vocabulary, max_length=70):
         self.ayat = ayat_list
         self.vocabulary = vocabulary
         self.max_length = max_length
@@ -44,7 +44,7 @@ class QuranAyahDataset(Dataset):
         return x, y
 
 class QuranMatcherModel(nn.Module):
-    def __init__(self, vocab_size, input_length=100, hidden_size=256, output_size=6203):
+    def __init__(self, vocab_size, input_length=70, hidden_size=256, output_size=6203):
         super(QuranMatcherModel, self).__init__()
 
         self.vocab_size = vocab_size
