@@ -70,6 +70,11 @@ extension String {
         let sourceArray = Array(self)
         let targetArray = Array(target)
         let (n, m) = (sourceArray.count, targetArray.count)
+
+        // Handle empty strings
+        if n == 0 { return m }
+        if m == 0 { return n }
+
         var dist = Array(repeating: Array(repeating: 0, count: m + 1), count: n + 1)
 
         for i in 0...n { dist[i][0] = i }

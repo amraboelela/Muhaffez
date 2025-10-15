@@ -22,7 +22,6 @@
 		F521F93F2E9EE9FF00BCD1CE /* predict.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = predict.py; sourceTree = "<group>"; };
 		F521F9412E9EE9FF00BCD1CE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		F521F9422E9EE9FF00BCD1CE /* train.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = train.py; sourceTree = "<group>"; };
-		F521F9432E9EE9FF00BCD1CE /* vocabulary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vocabulary.json; sourceTree = "<group>"; };
 		F521F9572E9F24B500BCD1CE /* convert_to_coreml.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = convert_to_coreml.py; sourceTree = "<group>"; };
 		F521F9662E9F24B500BCD1CE /* train_offset.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = train_offset.py; sourceTree = "<group>"; };
 		F521F96A2E9F678C00BCD1CE /* quran_matcher_model_offset.pth */ = {isa = PBXFileReference; lastKnownFileType = file; path = quran_matcher_model_offset.pth; sourceTree = "<group>"; };
@@ -98,7 +97,6 @@
 				F521F93F2E9EE9FF00BCD1CE /* predict.py */,
 				F521F9412E9EE9FF00BCD1CE /* README.md */,
 				F521F9422E9EE9FF00BCD1CE /* train.py */,
-				F521F9432E9EE9FF00BCD1CE /* vocabulary.json */,
 			);
 			path = ai;
 			sourceTree = "<group>";

@@ -17,13 +17,11 @@ struct MLModelTests {
         // Pass raw text (with tashkeel) as the model was trained on raw text
         let voiceText = "بسم الله الرحمن الرحيم"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should return index 0 (Al-Fatiha first ayah)
-        #expect(result != nil)
-        if let index = result {
-            #expect(index == 0)
-        }
+        #expect(index == 0)
+        #expect(similarity != nil)
     }
 
     @Test("ML Model returns valid index for An-Nas")
@@ -31,13 +29,11 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = "قل اعوذ برب الناس"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(result != nil)
-        if let index = result {
-            #expect(index == 6197)  // First ayah of An-Nas
-        }
+        #expect(index == 6197)  // First ayah of An-Nas
+        #expect(similarity != nil)
     }
 
     @Test("ML Model returns valid index for Al-Ma'idah 51 (missing first word)")
@@ -46,13 +42,11 @@ struct MLModelTests {
         // Missing first word "يا" - tests model's robustness to partial input
         let voiceText = "أَيُّهَا الَّذينَ آمَنوا لا تَتَّخِذُوا اليَهودَ وَالنَّصارىٰ أَولِياءَ بَعضُهُم أَولِياءُ بَعضٍ"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should return index 717 (Al-Ma'idah:51)
-        #expect(result != nil)
-        if let index = result {
-            #expect(index == 717)  // Al-Ma'idah:51
-        }
+        #expect(index == 717)  // Al-Ma'idah:51
+        #expect(similarity != nil)
     }
 
     @Test("ML Model returns valid index for Al-Baqara 255 (Ayat Al-Kursi)")
@@ -60,11 +54,11 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = "الله لا اله الا هو الحي القيوم"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should return a valid ayah index
-        #expect(result != nil)
-        if let index = result {
+        #expect(index != nil)
+        if let index {
             #expect(index >= 0 && index < 6203)
         }
     }
@@ -74,13 +68,11 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = "الحمد لله رب"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should return index 1 (Al-Fatiha second ayah) or close
-        #expect(result != nil)
-        if let index = result {
-            #expect(index >= 0 && index < 10)  // Should be in early ayat
-        }
+        #expect(index == 1)  // Should be in early ayat
+        #expect(similarity != nil)
     }
 
     @Test("ML Model returns result for non-Quranic text")
@@ -88,12 +80,12 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = "hello world this is not arabic"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Neural network will always return a prediction, even for non-Arabic
         // This is expected behavior - validation should happen before calling ML
-        #expect(result != nil)
-        if let index = result {
+        #expect(index != nil)
+        if let index {
             #expect(index >= 0 && index < 6203)
         }
     }
@@ -104,13 +96,11 @@ struct MLModelTests {
         // Distorted version of "بسم الله الرحمن الرحيم"
         let voiceText = "بسم اله الرحمن الرحم"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should still find Al-Fatiha (trained with distortions)
-        #expect(result != nil)
-        if let index = result {
-            #expect(index >= 0 && index < 20)  // Should be in early ayat
-        }
+        #expect(index == 0)  // Should be in early ayat
+        #expect(similarity != nil)
     }
 
     @Test("ML Model handles offset text (starting from 2nd word)")
@@ -119,14 +109,12 @@ struct MLModelTests {
         // Test with partial ayah (last part of Al-Fatiha first ayah)
         let voiceText = "الرحمن الرحيم"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Model may not find exact match since this is just a fragment
         // Just verify it returns a valid index
-        #expect(result != nil)
-        if let index = result {
-            #expect(index >= 0 && index < 6203)
-        }
+        #expect(index == 2)
+        #expect(similarity != nil)
     }
 
     @Test("ML Model handles empty string")
@@ -134,14 +122,11 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = ""
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
-        // Empty string gets tokenized as all PAD tokens, model will still predict
-        // This is expected behavior - input validation should happen before calling ML
-        #expect(result != nil)
-        if let index = result {
-            #expect(index >= 0 && index < 6203)
-        }
+        // Empty string results in empty normalized text, so we return nil
+        #expect(index == nil)
+        #expect(similarity == nil)
     }
 
     @Test("ML Model handles long input (70+ characters)")
@@ -149,12 +134,10 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         let voiceText = "ان الله يامركم ان تؤدوا الامانات الى اهلها واذا حكمتم بين الناس ان تحكموا بالعدل"
 
-        let result = viewModel.tryMLModelMatch(voiceText: voiceText)
+        let (index, similarity) = viewModel.tryMLModelMatch(voiceText: voiceText)
 
         // Should truncate to 70 chars and still find match
-        #expect(result != nil)
-        if let index = result {
-            #expect(index >= 0 && index < 6203)
-        }
+        #expect(index == 548)
+        #expect(similarity != nil)
     }
 }

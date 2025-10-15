@@ -121,72 +121,68 @@ class MuhaffezViewModel {
         updateQuranText()
     }
 
-    func tryMLModelMatch(voiceText: String) -> Int? {
+    // Returns (ayahIndex, similarityPercent) where:
+    // - ayahIndex: The best matching ayah index from top 5 ML predictions
+    // - similarityPercent: Similarity score (0-100) between voice text and the matched ayah
+    func tryMLModelMatch(voiceText: String) -> (Int?, Int?) {
         guard let prediction = mlModel.predict(text: voiceText) else {
-            return nil
+            return (nil, nil)
         }
 
         print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
-        print("Ayah: \(QuranModel.shared.quranLines[prediction.ayahIndex])")
-        print("Top 5: \(prediction.top5)")
+        //print("Ayah: \(QuranModel.shared.quranLines[prediction.ayahIndex])")
+        print("Top 5 predictions:")
+        for (index, prob) in prediction.top5 {
+            print("  [\(index)] \(String(format: "%.2f%%", prob * 100)): \(QuranModel.shared.quranLines[index])")
+        }
 
-        // Use the prediction if probability is reasonable
-        //if prediction.probability > 0.5 {  // 50% threshold - fall back to fuzzy matching for low confidence
-        return prediction.ayahIndex
-        //}
+        // Check top 5 predictions and return the one with highest similarity to normalized voice
+        let normVoice = voiceText.normalizedArabic
+        print("normVoice: '\(normVoice)' (length: \(normVoice.count))")
+        guard !normVoice.isEmpty else {
+            print("normVoice is empty, returning nil")
+            return (nil, nil)
+        }
 
-        return nil
+        var bestMatch: (index: Int, similarity: Double) = (prediction.ayahIndex, 0.0)
+
+        for (index, _) in prediction.top5 {
+            let ayahNorm = quranLines[index].normalizedArabic
+            let prefix = String(ayahNorm.prefix(normVoice.count + 2))
+            print("  [\(index)] ayahNorm: '\(ayahNorm)' (length: \(ayahNorm.count))")
+            print("  [\(index)] prefix: '\(prefix)' (length: \(prefix.count))")
+            let similarity = normVoice.similarity(to: prefix)
+
+            print("  [\(index)] similarity: \(String(format: "%.2f%%", similarity * 100))")
+
+            if similarity > bestMatch.similarity {
+                bestMatch = (index, similarity)
+            }
+        }
+
+        let similarityPercent = Int(bestMatch.similarity * 100)
+        print("Best match: [\(bestMatch.index)] with \(similarityPercent)% similarity")
+        return (bestMatch.index, similarityPercent)
     }
 
     private func performFallbackMatch(normVoice: String) {
         print("performFallbackMatch normVoice: \(normVoice)")
 
         // Use ML model for prediction - pass original voiceText, not normalized
-        if let ayahIndex = tryMLModelMatch(voiceText: voiceText) {
-            // Validate ML prediction with fuzzy matching
-            let ayahNorm = quranLines[ayahIndex].normalizedArabic
-            let prefix = String(ayahNorm.prefix(normVoice.count + 2))
-            let matchScore = normVoice.similarity(to: prefix)
-
-            print("ML prediction validation - Match score: \(matchScore)")
-
-            if matchScore > 0.9 {  // 90% fuzzy match threshold
-                print("ML prediction validated with \(matchScore * 100)% match")
+        let (ayahIndex, similarityPercent) = tryMLModelMatch(voiceText: voiceText)
+        if let ayahIndex, let similarityPercent {
+            if similarityPercent >= 90 {  // 90% fuzzy match threshold
+                print("ML prediction validated with \(similarityPercent)% similarity")
                 foundAyat = [ayahIndex]
                 updateQuranText()
                 updateMatchedWords()
                 return
             } else {
-                print("ML prediction rejected - fuzzy match score too low: \(matchScore)")
+                print("ML prediction rejected - similarity score too low: \(similarityPercent)%")
             }
         }
 
-        print("ML model failed, has low confidence, or failed validation")
-
-        // If ML model fails or validation fails, fall back to similarity matching
-        var bestIndex: Int?
-        var bestScore = 0.0
-
-        for (index, line) in quranLines.enumerated() {
-            let lineNorm = line.normalizedArabic
-            guard lineNorm.count >= normVoice.count else { continue }
-
-            let prefix = String(lineNorm.prefix(normVoice.count + 2))
-            let score = normVoice.similarity(to: prefix)
-
-            if score > bestScore {
-                bestScore = score
-                bestIndex = index
-            }
-            if score > 0.9 { break }
-        }
-
-        if let bestIndex {
-            print("performFallbackMatch bestIndex: \(bestIndex)")
-            foundAyat = [bestIndex]
-            updateQuranText()
-            updateMatchedWords()
-        }
+        print("ML model failed or had low similarity score")
     }
 
     private func updateQuranText() {
