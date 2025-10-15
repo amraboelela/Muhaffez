@@ -71,6 +71,7 @@ class MuhaffezViewModel {
     private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
     private let forwardCount = 13
+    private let mlModel = AyaFinderMLModel()
 
     // MARK: - Public Actions
 
@@ -122,6 +123,22 @@ class MuhaffezViewModel {
 
     private func performFallbackMatch(normVoice: String) {
         print("performFallbackMatch normVoice: \(normVoice)")
+
+        // Use ML model for prediction
+        if let prediction = mlModel.predict(text: normVoice) {
+            print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
+            print("Top 5: \(prediction.top5)")
+
+            // Use the prediction if probability is reasonable
+            if prediction.probability > 0.1 {  // Low threshold since we're already in fallback
+                foundAyat = [prediction.ayahIndex]
+                updateQuranText()
+                updateMatchedWords()
+                return
+            }
+        }
+
+        // If ML model fails or has low confidence, fall back to similarity matching
         var bestIndex: Int?
         var bestScore = 0.0
 
