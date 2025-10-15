@@ -176,7 +176,32 @@ class MuhaffezViewModel {
             }
         }
 
-        print("ML model failed or had low similarity score")
+        print("ML model failed, has low confidence, or failed validation")
+
+        // If ML model fails or validation fails, fall back to similarity matching
+        var bestIndex: Int?
+        var bestScore = 0.0
+
+        for (index, line) in quranLines.enumerated() {
+            let lineNorm = line.normalizedArabic
+            guard lineNorm.count >= normVoice.count else { continue }
+
+            let prefix = String(lineNorm.prefix(normVoice.count + 2))
+            let score = normVoice.similarity(to: prefix)
+
+            if score > bestScore {
+                bestScore = score
+                bestIndex = index
+            }
+            if score > 0.9 { break }
+        }
+
+        if let bestIndex {
+            print("performFallbackMatch bestIndex: \(bestIndex)")
+            foundAyat = [bestIndex]
+            updateQuranText()
+            updateMatchedWords()
+        }
     }
 
     private func updateQuranText() {
