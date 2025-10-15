@@ -11,7 +11,7 @@ import CoreML
 class AyaFinderMLModel {
     private var model: MLModel?
     private var vocabulary: [String: Int] = [:]
-    private let maxLength = 70
+    private let maxLength = 60
 
     init() {
         loadModel()
@@ -44,16 +44,19 @@ class AyaFinderMLModel {
     func predict(text: String) -> (ayahIndex: Int, probability: Double, top5: [(Int, Double)])? {
         guard let model = model else { return nil }
 
-        // Tokenize the input
-        let tokens = tokenize(text: text)
+        // Normalize the input text using String extension
+        let normalizedText = text.normalizedArabic
+
+        // Tokenize the normalized input (limit to 60 chars)
+        let tokens = tokenize(text: normalizedText)
 
         // Create MLMultiArray input
-        guard let input = try? MLMultiArray(shape: [1, 70], dataType: .int32) else {
+        guard let input = try? MLMultiArray(shape: [1, 60], dataType: .int32) else {
             print("Error creating MLMultiArray")
             return nil
         }
 
-        for i in 0..<70 {
+        for i in 0..<60 {
             input[i] = NSNumber(value: tokens[i])
         }
 
@@ -97,15 +100,15 @@ class AyaFinderMLModel {
 
         var tokens: [Int] = []
 
-        // Take first 70 characters
-        let prefix = String(text.prefix(70))
+        // Take first 60 characters
+        let prefix = String(text.prefix(60))
 
         for char in prefix {
             let token = vocabulary[String(char)] ?? unkToken
             tokens.append(token)
         }
 
-        // Pad to 70
+        // Pad to 60
         while tokens.count < maxLength {
             tokens.append(padToken)
         }

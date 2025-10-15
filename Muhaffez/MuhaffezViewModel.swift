@@ -127,12 +127,13 @@ class MuhaffezViewModel {
         }
 
         print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
+        print("Ayah: \(QuranModel.shared.quranLines[prediction.ayahIndex])")
         print("Top 5: \(prediction.top5)")
 
         // Use the prediction if probability is reasonable
-        if prediction.probability > 0.1 {  // Low threshold since we're already in fallback
-            return prediction.ayahIndex
-        }
+        //if prediction.probability > 0.5 {  // 50% threshold - fall back to fuzzy matching for low confidence
+        return prediction.ayahIndex
+        //}
 
         return nil
     }
@@ -142,15 +143,27 @@ class MuhaffezViewModel {
 
         // Use ML model for prediction - pass original voiceText, not normalized
         if let ayahIndex = tryMLModelMatch(voiceText: voiceText) {
-            foundAyat = [ayahIndex]
-            updateQuranText()
-            updateMatchedWords()
-            return
+            // Validate ML prediction with fuzzy matching
+            let ayahNorm = quranLines[ayahIndex].normalizedArabic
+            let prefix = String(ayahNorm.prefix(normVoice.count + 2))
+            let matchScore = normVoice.similarity(to: prefix)
+
+            print("ML prediction validation - Match score: \(matchScore)")
+
+            if matchScore > 0.9 {  // 90% fuzzy match threshold
+                print("ML prediction validated with \(matchScore * 100)% match")
+                foundAyat = [ayahIndex]
+                updateQuranText()
+                updateMatchedWords()
+                return
+            } else {
+                print("ML prediction rejected - fuzzy match score too low: \(matchScore)")
+            }
         }
 
-        print("ML model failed or has low confidence")
+        print("ML model failed, has low confidence, or failed validation")
 
-        // If ML model fails or has low confidence, fall back to similarity matching
+        // If ML model fails or validation fails, fall back to similarity matching
         var bestIndex: Int?
         var bestScore = 0.0
 
