@@ -121,22 +121,34 @@ class MuhaffezViewModel {
         updateQuranText()
     }
 
+    func tryMLModelMatch(voiceText: String) -> Int? {
+        guard let prediction = mlModel.predict(text: voiceText) else {
+            return nil
+        }
+
+        print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
+        print("Top 5: \(prediction.top5)")
+
+        // Use the prediction if probability is reasonable
+        if prediction.probability > 0.1 {  // Low threshold since we're already in fallback
+            return prediction.ayahIndex
+        }
+
+        return nil
+    }
+
     private func performFallbackMatch(normVoice: String) {
         print("performFallbackMatch normVoice: \(normVoice)")
 
-        // Use ML model for prediction
-        if let prediction = mlModel.predict(text: normVoice) {
-            print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
-            print("Top 5: \(prediction.top5)")
-
-            // Use the prediction if probability is reasonable
-            if prediction.probability > 0.1 {  // Low threshold since we're already in fallback
-                foundAyat = [prediction.ayahIndex]
-                updateQuranText()
-                updateMatchedWords()
-                return
-            }
+        // Use ML model for prediction - pass original voiceText, not normalized
+        if let ayahIndex = tryMLModelMatch(voiceText: voiceText) {
+            foundAyat = [ayahIndex]
+            updateQuranText()
+            updateMatchedWords()
+            return
         }
+
+        print("ML model failed or has low confidence")
 
         // If ML model fails or has low confidence, fall back to similarity matching
         var bestIndex: Int?

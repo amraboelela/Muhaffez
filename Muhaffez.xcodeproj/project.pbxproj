@@ -25,6 +25,12 @@
 		F521F9432E9EE9FF00BCD1CE /* vocabulary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vocabulary.json; sourceTree = "<group>"; };
 		F521F9572E9F24B500BCD1CE /* convert_to_coreml.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = convert_to_coreml.py; sourceTree = "<group>"; };
 		F521F9662E9F24B500BCD1CE /* train_offset.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = train_offset.py; sourceTree = "<group>"; };
+		F521F96A2E9F678C00BCD1CE /* quran_matcher_model_offset.pth */ = {isa = PBXFileReference; lastKnownFileType = file; path = quran_matcher_model_offset.pth; sourceTree = "<group>"; };
+		F521F96B2E9F678C00BCD1CE /* test_inputs.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = test_inputs.txt; sourceTree = "<group>"; };
+		F521F96C2E9F678C00BCD1CE /* test_maeda.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = test_maeda.py; sourceTree = "<group>"; };
+		F521F96D2E9F678C00BCD1CE /* test_results.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = test_results.txt; sourceTree = "<group>"; };
+		F521F96E2E9F678C00BCD1CE /* training_inputs_all.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = training_inputs_all.txt; sourceTree = "<group>"; };
+		F521F96F2E9F678C00BCD1CE /* training_inputs_clean.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = training_inputs_clean.txt; sourceTree = "<group>"; };
 		F55646302E5D658C009E02B8 /* icon-center.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = "icon-center.svg"; sourceTree = "<group>"; };
 		F5B728742E53CDC600E7B4AC /* Muhaffez.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Muhaffez.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5B728812E53CDC700E7B4AC /* MuhaffezTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MuhaffezTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -37,7 +43,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				.claude/settings.local.json,
-				embed_quran.py,
 				read_embeddings.py,
 			);
 			target = F5B728732E53CDC600E7B4AC /* Muhaffez */;
@@ -81,6 +86,12 @@
 		F521F9442E9EE9FF00BCD1CE /* ai */ = {
 			isa = PBXGroup;
 			children = (
+				F521F96A2E9F678C00BCD1CE /* quran_matcher_model_offset.pth */,
+				F521F96B2E9F678C00BCD1CE /* test_inputs.txt */,
+				F521F96C2E9F678C00BCD1CE /* test_maeda.py */,
+				F521F96D2E9F678C00BCD1CE /* test_results.txt */,
+				F521F96E2E9F678C00BCD1CE /* training_inputs_all.txt */,
+				F521F96F2E9F678C00BCD1CE /* training_inputs_clean.txt */,
 				F521F9572E9F24B500BCD1CE /* convert_to_coreml.py */,
 				F521F9662E9F24B500BCD1CE /* train_offset.py */,
 				F521F93E2E9EE9FF00BCD1CE /* model.py */,

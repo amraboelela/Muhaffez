@@ -1,0 +1,24 @@
+# Test inputs for Quran Ayah Matcher
+# Format: Each line is a test input (partial/noisy ayah text with at least 3 words)
+
+# Complete ayat from Surah Al-Fatiha
+بِسمِ اللَّهِ الرَّحمٰنِ الرَّحيمِ
+الحَمدُ لِلَّهِ رَبِّ العالَمينَ
+اهدِنَا الصِّراطَ المُستَقيمَ
+
+# Complete ayat from Surah Al-Baqarah
+الم ذٰلِكَ الكِتابُ لا رَيبَ
+الَّذينَ يُؤمِنونَ بِالغَيبِ وَيُقيمونَ الصَّلاةَ
+خَتَمَ اللَّهُ عَلىٰ قُلوبِهِم
+
+# Complete ayat from Surah Al-Ikhlas
+قُل هُوَ اللَّهُ أَحَدٌ
+اللَّهُ الصَّمَدُ لَم يَلِد
+لَم يَلِد وَلَم يولَد
+
+# Partial versions (at least 3 words each)
+بِسمِ اللَّهِ الرَّحمٰنِ
+الحَمدُ لِلَّهِ رَبِّ العالَمينَ
+اهدِنَا الصِّراطَ المُستَقيمَ
+الَّذينَ يُؤمِنونَ بِالغَيبِ وَيُقيمونَ
+قُل هُوَ اللَّهُ أَحَدٌ

@@ -9,96 +9,107 @@ import Foundation
 import CoreML
 
 class AyaFinderMLModel {
-  private var model: MLModel?
-  private var vocabulary: [String: Int] = [:]
-  private let maxLength = 70
+    private var model: MLModel?
+    private var vocabulary: [String: Int] = [:]
+    private let maxLength = 70
 
-  init() {
-    loadModel()
-    loadVocabulary()
-  }
-
-  private func loadModel() {
-    do {
-      let config = MLModelConfiguration()
-      config.computeUnits = .all
-      model = try AyaFinder(configuration: config).model
-      print("AyaFinder model loaded successfully")
-    } catch {
-      print("Error loading AyaFinder model: \(error)")
-    }
-  }
-
-  private func loadVocabulary() {
-    guard let url = Bundle.main.url(forResource: "vocabulary", withExtension: "json"),
-          let data = try? Data(contentsOf: url),
-          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-          let charToToken = json["char_to_token"] as? [String: Int] else {
-      print("Error loading vocabulary")
-      return
-    }
-    vocabulary = charToToken
-    print("Vocabulary loaded: \(vocabulary.count) tokens")
-  }
-
-  func predict(text: String) -> (ayahIndex: Int, probability: Double, top5: [(Int, Double)])? {
-    guard let model = model else { return nil }
-
-    // Tokenize the input
-    let tokens = tokenize(text: text)
-
-    // Create MLMultiArray input
-    guard let input = try? MLMultiArray(shape: [1, 70], dataType: .int32) else {
-      print("Error creating MLMultiArray")
-      return nil
+    init() {
+        loadModel()
+        loadVocabulary()
     }
 
-    for i in 0..<70 {
-      input[i] = NSNumber(value: tokens[i])
+    private func loadModel() {
+        do {
+            let config = MLModelConfiguration()
+            config.computeUnits = .all
+            model = try AyaFinder(configuration: config).model
+            print("AyaFinder model loaded successfully")
+        } catch {
+            print("Error loading AyaFinder model: \(error)")
+        }
     }
 
-    // Run inference
-    guard let output = try? model.prediction(from: AyaFinderInput(input: input)),
-          let outputArray = output.featureValue(for: "output")?.multiArrayValue else {
-      print("Error running inference")
-      return nil
+    private func loadVocabulary() {
+        guard let url = Bundle.main.url(forResource: "vocabulary", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let charToToken = json["char_to_token"] as? [String: Int] else {
+            print("Error loading vocabulary")
+            return
+        }
+        vocabulary = charToToken
+        print("Vocabulary loaded: \(vocabulary.count) tokens")
     }
 
-    // Get probabilities and find top 5
-    var probabilities: [(index: Int, prob: Double)] = []
-    for i in 0..<outputArray.count {
-      let prob = outputArray[i].doubleValue
-      probabilities.append((i, prob))
+    func predict(text: String) -> (ayahIndex: Int, probability: Double, top5: [(Int, Double)])? {
+        guard let model = model else { return nil }
+
+        // Tokenize the input
+        let tokens = tokenize(text: text)
+
+        // Create MLMultiArray input
+        guard let input = try? MLMultiArray(shape: [1, 70], dataType: .int32) else {
+            print("Error creating MLMultiArray")
+            return nil
+        }
+
+        for i in 0..<70 {
+            input[i] = NSNumber(value: tokens[i])
+        }
+
+        // Run inference
+        guard let output = try? model.prediction(from: AyaFinderInput(input: input)),
+              let outputArray = output.featureValue(for: "output")?.multiArrayValue else {
+            print("Error running inference")
+            return nil
+        }
+
+        // Get logits and apply softmax to get probabilities
+        var logits: [Double] = []
+        for i in 0..<outputArray.count {
+            logits.append(outputArray[i].doubleValue)
+        }
+
+        // Apply softmax: exp(x) / sum(exp(x))
+        let maxLogit = logits.max() ?? 0
+        let expLogits = logits.map { exp($0 - maxLogit) }  // subtract max for numerical stability
+        let sumExp = expLogits.reduce(0, +)
+        let probabilities = expLogits.map { $0 / sumExp }
+
+        // Create array with indices and probabilities
+        var indexedProbs: [(index: Int, prob: Double)] = []
+        for (i, prob) in probabilities.enumerated() {
+            indexedProbs.append((i, prob))
+        }
+
+        // Sort by probability descending
+        indexedProbs.sort { $0.prob > $1.prob }
+
+        let topPrediction = indexedProbs[0]
+        let top5 = Array(indexedProbs.prefix(5)).map { ($0.index, $0.prob) }
+
+        return (topPrediction.index, topPrediction.prob, top5)
     }
 
-    // Sort by probability descending
-    probabilities.sort { $0.prob > $1.prob }
+    private func tokenize(text: String) -> [Int] {
+        let padToken = vocabulary["<PAD>"] ?? 0
+        let unkToken = vocabulary["<UNK>"] ?? 1
 
-    let topPrediction = probabilities[0]
-    let top5 = Array(probabilities.prefix(5)).map { ($0.index, $0.prob) }
+        var tokens: [Int] = []
 
-    return (topPrediction.index, topPrediction.prob, top5)
-  }
+        // Take first 70 characters
+        let prefix = String(text.prefix(70))
 
-  private func tokenize(text: String) -> [Int] {
-    let padToken = vocabulary["<PAD>"] ?? 0
-    let unkToken = vocabulary["<UNK>"] ?? 1
+        for char in prefix {
+            let token = vocabulary[String(char)] ?? unkToken
+            tokens.append(token)
+        }
 
-    var tokens: [Int] = []
+        // Pad to 70
+        while tokens.count < maxLength {
+            tokens.append(padToken)
+        }
 
-    // Take first 70 characters
-    let prefix = String(text.prefix(70))
-
-    for char in prefix {
-      let token = vocabulary[String(char)] ?? unkToken
-      tokens.append(token)
+        return Array(tokens.prefix(maxLength))
     }
-
-    // Pad to 70
-    while tokens.count < maxLength {
-      tokens.append(padToken)
-    }
-
-    return Array(tokens.prefix(maxLength))
-  }
 }
