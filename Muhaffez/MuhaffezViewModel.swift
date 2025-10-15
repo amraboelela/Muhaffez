@@ -130,7 +130,6 @@ class MuhaffezViewModel {
         }
 
         print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
-        //print("Ayah: \(QuranModel.shared.quranLines[prediction.ayahIndex])")
         print("Top 5 predictions:")
         for (index, prob) in prediction.top5 {
             print("  [\(index)] \(String(format: "%.2f%%", prob * 100)): \(QuranModel.shared.quranLines[index])")
@@ -138,7 +137,6 @@ class MuhaffezViewModel {
 
         // Check top 5 predictions and return the one with highest similarity to normalized voice
         let normVoice = voiceText.normalizedArabic
-        print("normVoice: '\(normVoice)' (length: \(normVoice.count))")
         guard !normVoice.isEmpty else {
             print("normVoice is empty, returning nil")
             return (nil, nil)
@@ -149,11 +147,7 @@ class MuhaffezViewModel {
         for (index, _) in prediction.top5 {
             let ayahNorm = quranLines[index].normalizedArabic
             let prefix = String(ayahNorm.prefix(normVoice.count + 2))
-            print("  [\(index)] ayahNorm: '\(ayahNorm)' (length: \(ayahNorm.count))")
-            print("  [\(index)] prefix: '\(prefix)' (length: \(prefix.count))")
             let similarity = normVoice.similarity(to: prefix)
-
-            print("  [\(index)] similarity: \(String(format: "%.2f%%", similarity * 100))")
 
             if similarity > bestMatch.similarity {
                 bestMatch = (index, similarity)
@@ -161,7 +155,7 @@ class MuhaffezViewModel {
         }
 
         let similarityPercent = Int(bestMatch.similarity * 100)
-        print("Best match: [\(bestMatch.index)] with \(similarityPercent)% similarity")
+        print("Best match: [\(bestMatch.index)] with \(similarityPercent)% similarity - \(QuranModel.shared.quranLines[bestMatch.index])")
         return (bestMatch.index, similarityPercent)
     }
 
