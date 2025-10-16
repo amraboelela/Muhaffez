@@ -76,6 +76,7 @@ class MuhaffezViewModel {
     // MARK: - Public Actions
 
     func resetData() {
+        debounceTimer?.invalidate()
         foundAyat.removeAll()
         quranText = ""
         matchedWords = []
@@ -165,7 +166,7 @@ class MuhaffezViewModel {
         // Use ML model for prediction - pass original voiceText, not normalized
         let (ayahIndex, similarityPercent) = tryMLModelMatch(voiceText: voiceText)
         if let ayahIndex, let similarityPercent {
-            if similarityPercent >= 90 {  // 90% fuzzy match threshold
+            if similarityPercent >= 85 {  // 85% fuzzy match threshold
                 print("ML prediction validated with \(similarityPercent)% similarity")
                 foundAyat = [ayahIndex]
                 updateQuranText()
@@ -193,7 +194,9 @@ class MuhaffezViewModel {
                 bestScore = score
                 bestIndex = index
             }
-            if score > 0.9 { break }
+            if score > 0.9 {
+                break
+            }
         }
 
         if let bestIndex {
@@ -332,7 +335,7 @@ class MuhaffezViewModel {
             results.append((quranWords[quranWordsIndex], false))
             results.append((quranWords[quranWordsIndex + 1], false))
             matchedWords = results
+            print("[\(Date().logTimestamp)] voiceWord, peekHelper \(quranWords[quranWordsIndex]) \(quranWords[quranWordsIndex + 1]) ")
         }
-        print("[\(Date().logTimestamp)] voiceWord, peekHelper \(quranWords[quranWordsIndex]) \(quranWords[quranWordsIndex + 1]) ")
     }
 }
