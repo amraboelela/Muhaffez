@@ -18,8 +18,11 @@ class MuhaffezViewModel {
         didSet {
             voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
             if !voiceText.isEmpty {
-                updateFoundAyat()
-                updateMatchedWords()
+                if foundAyat.count != 1 {
+                    updateFoundAyat()
+                } else {
+                    updateMatchedWords()
+                }
             }
         }
     }
@@ -70,7 +73,7 @@ class MuhaffezViewModel {
     private let matchThreshold = 0.7
     private let simiMatchThreshold = 0.6
     private let seekMatchThreshold = 0.95
-    private let forwardCount = 13
+    private let forwardCount = 15
     private let mlModel = AyaFinderMLModel()
 
     // MARK: - Public Actions
@@ -99,7 +102,6 @@ class MuhaffezViewModel {
 
         foundAyat.removeAll()
         let normVoice = voiceText.normalizedArabic
-        guard normVoice.count > 35 else { return }
         print("updateFoundAyat normVoice: \(normVoice)")
         // Fast prefix check
         for (index, line) in quranLines.enumerated() {
@@ -109,7 +111,7 @@ class MuhaffezViewModel {
         }
 
         // Fallback with debounce if no matches
-        if foundAyat.isEmpty {
+        if foundAyat.isEmpty || normVoice.count < 35 {
             print("updateFoundAyat foundAyat.isEmpty")
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
                 Task { @MainActor in

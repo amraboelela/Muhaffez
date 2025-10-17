@@ -14,8 +14,10 @@ class AyaFinderMLModel {
     private let maxLength = 60
 
     init() {
-        loadModel()
-        loadVocabulary()
+        Task.detached { [weak self] in
+            self?.loadModel()
+            self?.loadVocabulary()
+        }
     }
 
     private func loadModel() {
