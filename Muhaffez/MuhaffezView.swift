@@ -11,7 +11,12 @@ struct MuhaffezView: View {
     @StateObject var recognizer = ArabicSpeechRecognizer()
     @State var viewModel = MuhaffezViewModel()
     @AppStorage("hasSeenTooltip") private var hasSeenTooltip = false
-    
+    @AppStorage("hasSeenStopTooltip") private var hasSeenStopTooltip = false
+    @AppStorage("hasSeenRestartTooltip") private var hasSeenRestartTooltip = false
+    @State private var showStopTooltip = false
+    @State private var showRestartTooltip = false
+    @State private var silenceTimer: Timer?
+
     var body: some View {
         VStack {
             if viewModel.matchedWords.count == 0 && !viewModel.voiceText.isEmpty {
@@ -28,31 +33,32 @@ struct MuhaffezView: View {
                 TwoPagesView(viewModel: viewModel)
             }
             if !hasSeenTooltip {
-                VStack(spacing: 12) {
-                    Text("Tap here and start reciting from the Quran")
-                        .font(.title3)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue)
-                        )
-                        .shadow(radius: 8)
-                    Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(.blue)
-                        .offset(y: -8)
-                }
+                tooltipView(text: "Tap here and start reciting from the Quran", color: .blue)
+            }
+            if showStopTooltip && !hasSeenStopTooltip {
+                tooltipView(text: "Tap here to stop recording, then you can start a new recitation", color: .orange)
+            }
+            if showRestartTooltip && !hasSeenRestartTooltip {
+                tooltipView(text: "Tap here to start a new recitation", color: .green)
             }
             Button(action: {
                 hasSeenTooltip = true
                 if viewModel.isRecording {
+                    hasSeenStopTooltip = true
+                    showStopTooltip = false
+                    silenceTimer?.invalidate()
+                    silenceTimer = nil
                     UIApplication.shared.isIdleTimerDisabled = false
                     recognizer.stopRecording()
+                    // Show restart tooltip after stopping
+                    if !hasSeenRestartTooltip {
+                        showRestartTooltip = true
+                    }
                 } else {
+                    if showRestartTooltip {
+                        hasSeenRestartTooltip = true
+                    }
+                    showRestartTooltip = false
                     UIApplication.shared.isIdleTimerDisabled = true
                     viewModel.resetData()
                     Task {
@@ -72,6 +78,21 @@ struct MuhaffezView: View {
         }
         .onChange(of: recognizer.voiceText) { _, newValue in
             viewModel.voiceText = newValue
+
+            // Reset and start silence timer when user starts recording and has text
+            if viewModel.isRecording && !newValue.isEmpty && !hasSeenStopTooltip {
+                silenceTimer?.invalidate()
+                silenceTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+                    showStopTooltip = true
+                }
+            }
+        }
+        .onChange(of: viewModel.isRecording) { _, isRecording in
+            if !isRecording {
+                silenceTimer?.invalidate()
+                silenceTimer = nil
+                showStopTooltip = false
+            }
         }
         .onAppear {
             // Use this for testing rub3 mark before
@@ -151,7 +172,27 @@ struct MuhaffezView: View {
             //          قُل إِنَّما أَنا بَشَرٌ مِثلُكُم يوحىٰ إِلَيَّ أَنَّما إِلٰهُكُم إِلٰهٌ واحِدٌ فَمَن كانَ يَرجو لِقاءَ رَبِّهِ فَليَعمَل عَمَلًا صالِحًا وَلا يُشرِك بِعِبادَةِ رَبِّهِ أَحَدًا
             //          """
             //      }
-            
+
+        }
+    }
+
+    private func tooltipView(text: String, color: Color) -> some View {
+        VStack(spacing: 0) {
+            Text(text)
+                .font(.headline)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(color)
+                )
+                .shadow(radius: 8)
+            Image(systemName: "arrowtriangle.down.fill")
+                .font(.system(size: 25))
+                .foregroundColor(color)
         }
     }
 }
