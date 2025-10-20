@@ -33,13 +33,13 @@ struct MuhaffezView: View {
                 TwoPagesView(viewModel: viewModel)
             }
             if !hasSeenTooltip {
-                tooltipView(text: "Tap here and start reciting from the Quran", color: .blue)
+                tooltipView(text: String(localized: "Tap here and start reciting from the Quran"), color: .blue)
             }
             if showStopTooltip && !hasSeenStopTooltip {
-                tooltipView(text: "Tap here to stop recording, then you can start a new recitation", color: .orange)
+                tooltipView(text: String(localized: "Tap here to stop recording, then you can start a new recitation"), color: .orange)
             }
             if showRestartTooltip && !hasSeenRestartTooltip {
-                tooltipView(text: "Tap here to start a new recitation", color: .green)
+                tooltipView(text: String(localized: "Tap here to start a new recitation"), color: .green)
             }
             Button(action: {
                 hasSeenTooltip = true
