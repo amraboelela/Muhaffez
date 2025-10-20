@@ -26,6 +26,7 @@ class MuhaffezViewModel {
             }
         }
     }
+    var voiceTextHasBesmillah = false
 
     var isRecording = false
     var matchedWords: [(word: String, isMatched: Bool)] = [] {
@@ -92,6 +93,7 @@ class MuhaffezViewModel {
         pageCurrentLineIndex = 0
         pageMatchedWordsIndex = 0
         previousVoiceWordsCount = 0
+        voiceTextHasBesmillah = false
     }
 
     // MARK: - Aya Matching
@@ -106,7 +108,12 @@ class MuhaffezViewModel {
         // Fast prefix check
         for (index, line) in quranLines.enumerated() {
             if line.normalizedArabic.hasPrefix(normVoice) {
-                foundAyat.append(index)
+                if index == 0 {
+                    print("updateFoundAyat, voiceTextHasBesmillah = true")
+                    voiceTextHasBesmillah = true
+                } else {
+                    foundAyat.append(index)
+                }
             }
         }
 
@@ -125,8 +132,8 @@ class MuhaffezViewModel {
     }
 
     // Returns ayah index if best match from top 5 ML predictions has similarity > 85%
-    func tryMLModelMatch(voiceText: String) -> Int? {
-        guard let prediction = mlModel.predict(text: voiceText) else {
+    func tryMLModelMatch(normVoice: String) -> Int? {
+        guard let prediction = mlModel.predict(text: normVoice) else {
             return nil
         }
 
@@ -137,7 +144,7 @@ class MuhaffezViewModel {
         }
 
         // Check top 5 predictions and return the one with highest similarity to normalized voice
-        let normVoice = voiceText.normalizedArabic
+        //let normVoice = textToPredict.normalizedArabic
         guard !normVoice.isEmpty else {
             print("normVoice is empty, returning nil")
             return nil
@@ -167,8 +174,22 @@ class MuhaffezViewModel {
     private func performFallbackMatch(normVoice: String) {
         print("performFallbackMatch normVoice: \(normVoice)")
 
+        var textToPredict = normVoice
+        if voiceTextHasBesmillah {
+            let words = normVoice.split(separator: " ")
+            guard words.count > 4 else { return }
+            textToPredict = words.dropFirst(4).joined(separator: " ")
+        }
+
         // Use ML model for prediction - pass original voiceText, not normalized
-        if let ayahIndex = tryMLModelMatch(voiceText: voiceText) {
+        if let ayahIndex = tryMLModelMatch(normVoice: textToPredict) {
+            // Strip bismillah if flag is set
+            if ayahIndex == 0 {
+                print("performFallbackMatch, voiceTextHasBesmillah = true")
+                voiceTextHasBesmillah = true
+                performFallbackMatch(normVoice: textToPredict)
+                return
+            }
             print("#coreml ML prediction accepted")
             foundAyat = [ayahIndex]
             updateQuranText()
@@ -184,10 +205,10 @@ class MuhaffezViewModel {
 
         for (index, line) in quranLines.enumerated() {
             let lineNorm = line.normalizedArabic
-            guard lineNorm.count >= normVoice.count else { continue }
+            guard lineNorm.count >= textToPredict.count else { continue }
 
-            let prefix = String(lineNorm.prefix(normVoice.count + 2))
-            let score = normVoice.similarity(to: prefix)
+            let prefix = String(lineNorm.prefix(textToPredict.count + 2))
+            let score = textToPredict.similarity(to: prefix)
 
             if score > bestScore {
                 bestScore = score
@@ -198,7 +219,7 @@ class MuhaffezViewModel {
             }
         }
 
-        if let bestIndex {
+        if let bestIndex, bestIndex > 0 {
             print("performFallbackMatch bestIndex: \(bestIndex)")
             foundAyat = [bestIndex]
             updateQuranText()
