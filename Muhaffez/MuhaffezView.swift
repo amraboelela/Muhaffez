@@ -13,8 +13,12 @@ struct MuhaffezView: View {
     @AppStorage("hasSeenTooltip") private var hasSeenTooltip = false
     @AppStorage("hasSeenStopTooltip") private var hasSeenStopTooltip = false
     @AppStorage("hasSeenRestartTooltip") private var hasSeenRestartTooltip = false
+    @AppStorage("hasSeenReciteTooltip") private var hasSeenReciteTooltip = false
+    @AppStorage("hasSeenContinueTooltip") private var hasSeenContinueTooltip = false
     @State private var showStopTooltip = false
     @State private var showRestartTooltip = false
+    @State private var showReciteTooltip = false
+    @State private var showContinueTooltip = false
     @State private var silenceTimer: Timer?
 
     var body: some View {
@@ -31,6 +35,12 @@ struct MuhaffezView: View {
                 Spacer()
             } else {
                 TwoPagesView(viewModel: viewModel)
+            }
+            if showReciteTooltip && !hasSeenReciteTooltip {
+                tooltipView(text: String(localized: "Recite few words from any aya in the Quran"), color: .purple)
+            }
+            if showContinueTooltip && !hasSeenContinueTooltip {
+                tooltipView(text: String(localized: "Now continue reciting in normal speed"), color: .cyan)
             }
             if !hasSeenTooltip {
                 tooltipView(text: String(localized: "Tap here and start reciting from the Quran"), color: .blue)
@@ -61,6 +71,10 @@ struct MuhaffezView: View {
                     showRestartTooltip = false
                     UIApplication.shared.isIdleTimerDisabled = true
                     viewModel.resetData()
+                    // Show recite tooltip when starting recording for the first time
+                    if !hasSeenReciteTooltip {
+                        showReciteTooltip = true
+                    }
                     Task {
                         try? recognizer.startRecording()
                         //print("called start recording")
@@ -81,10 +95,22 @@ struct MuhaffezView: View {
 
             // Reset and start silence timer when user starts recording and has text
             if viewModel.isRecording && !newValue.isEmpty && !hasSeenStopTooltip {
-                silenceTimer?.invalidate()
-                silenceTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
-                    showStopTooltip = true
-                }
+                showStopTooltipTimer()
+            }
+        }
+        .onChange(of: viewModel.foundAyat) { _, newValue in
+            // Show continue tooltip when aya is found
+            if newValue.count == 1 && !hasSeenContinueTooltip {
+                showReciteTooltip = false
+                hasSeenReciteTooltip = true
+                showContinueTooltip = true
+            }
+        }
+        .onChange(of: viewModel.matchedWords.count) { _, newValue in
+            // Hide continue tooltip when user starts reciting after aya is found
+            if newValue > 10 && showContinueTooltip {
+                showContinueTooltip = false
+                hasSeenContinueTooltip = true
             }
         }
         .onChange(of: viewModel.isRecording) { _, isRecording in
@@ -92,6 +118,8 @@ struct MuhaffezView: View {
                 silenceTimer?.invalidate()
                 silenceTimer = nil
                 showStopTooltip = false
+                showReciteTooltip = false
+                showContinueTooltip = false
             }
         }
         .onAppear {
@@ -193,6 +221,17 @@ struct MuhaffezView: View {
             Image(systemName: "arrowtriangle.down.fill")
                 .font(.system(size: 25))
                 .foregroundColor(color)
+        }
+    }
+
+    func showStopTooltipTimer() {
+        silenceTimer?.invalidate()
+        silenceTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+            if showContinueTooltip {
+                showStopTooltipTimer()
+            } else {
+                showStopTooltip = true
+            }
         }
     }
 }
