@@ -34,13 +34,21 @@ struct MuhaffezView: View {
                 }
                 Spacer()
             } else {
+                if showReciteTooltip && !hasSeenReciteTooltip {
+                    tooltipView(
+                        text: String(localized: "Recite few words from any aya in the Quran"),
+                        color: .purple,
+                        showArrow: false
+                    )
+                }
+                if showContinueTooltip && !hasSeenContinueTooltip {
+                    tooltipView(
+                        text: String(localized: "Now continue reciting in normal speed"),
+                        color: .cyan,
+                        showArrow: false
+                    )
+                }
                 TwoPagesView(viewModel: viewModel)
-            }
-            if showReciteTooltip && !hasSeenReciteTooltip {
-                tooltipView(text: String(localized: "Recite few words from any aya in the Quran"), color: .purple)
-            }
-            if showContinueTooltip && !hasSeenContinueTooltip {
-                tooltipView(text: String(localized: "Now continue reciting in normal speed"), color: .cyan)
             }
             if !hasSeenTooltip {
                 tooltipView(text: String(localized: "Tap here and start reciting from the Quran"), color: .blue)
@@ -204,7 +212,7 @@ struct MuhaffezView: View {
         }
     }
 
-    private func tooltipView(text: String, color: Color) -> some View {
+    private func tooltipView(text: String, color: Color, showArrow: Bool = true) -> some View {
         VStack(spacing: 0) {
             Text(text)
                 .font(.headline)
@@ -218,9 +226,11 @@ struct MuhaffezView: View {
                         .fill(color)
                 )
                 .shadow(radius: 8)
-            Image(systemName: "arrowtriangle.down.fill")
-                .font(.system(size: 25))
-                .foregroundColor(color)
+            if showArrow {
+                Image(systemName: "arrowtriangle.down.fill")
+                    .font(.system(size: 25))
+                    .foregroundColor(color)
+            }
         }
     }
 
