@@ -47,8 +47,34 @@ extension String {
 
     var removeBasmallah: String {
         let words = self.split(separator: " ")
-        guard words.count > 4 else { return self}
+        guard words.count >= 4 else { return self}
         return words.dropFirst(4).joined(separator: " ")
+    }
+
+    var removeA3ozoBellah: String {
+        let words = self.split(separator: " ")
+        guard words.count >= 5 else { return self }
+        return words.dropFirst(5).joined(separator: " ")
+    }
+
+    var hasA3ozoBellah: Bool {
+        // A3ozoBellah: "أعوذ بالله من الشيطان الرجيم"
+        let a3ozoWords = ["اعوذ", "بالله", "من", "الشيطان", "الرجيم"]
+        let normalizedText = self.normalizedArabic
+        let words = normalizedText.split(separator: " ").map { String($0) }
+
+        // Need at least 5 words to check
+        guard words.count >= 5 else { return false }
+
+        // Check similarity of first 5 words to a3ozo words
+        let similarityThreshold = 0.8
+        for i in 0..<5 {
+            let similarity = words[i].similarity(to: a3ozoWords[i])
+            if similarity < similarityThreshold {
+                return false
+            }
+        }
+        return true
     }
 
     func findIn(lines: [String]) -> String? {

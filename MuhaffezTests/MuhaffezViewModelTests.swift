@@ -98,6 +98,75 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.foundAyat.contains(6197))
     }
 
+    @Test func testA3ozoBellah() async throws {
+        let viewModel = MuhaffezViewModel()
+
+        // Test with just A3ozo Bellah - should not set voiceTextHasBesmillah
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم"
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        #expect(viewModel.voiceTextHasBesmillah == false)
+        #expect(viewModel.foundAyat.isEmpty)
+
+        viewModel.resetData()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم"
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        #expect(viewModel.voiceTextHasBesmillah == true)
+        #expect(viewModel.foundAyat.isEmpty)
+    }
+
+    @Test func testA3ozoBellahAndBismillahAndAnNas() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Wait for ML model or fallback matching with 3-second timeout
+        var timeout = 0
+        while viewModel.foundAyat.isEmpty && timeout < 3 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 3 {
+            #expect(Bool(false), "Timeout: Failed to find An-Nas (index 6197) after 3 seconds")
+        }
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+
+        viewModel.resetData()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب الناس ملك الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Wait for ML model or fallback matching
+        timeout = 0
+        while viewModel.foundAyat.isEmpty && timeout < 3 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 3 {
+            #expect(Bool(false), "Timeout: Failed to find An-Nas (index 6197) after 3 seconds")
+        }
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+
+        viewModel.resetData()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب النا ملك الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Wait for ML model or fallback matching with typo
+        timeout = 0
+        while viewModel.foundAyat.isEmpty && timeout < 3 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 3 {
+            #expect(Bool(false), "Timeout: Failed to find An-Nas (index 6197) after 3 seconds")
+        }
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+    }
+
     @Test func testPartialRecognition() async throws {
         let viewModel = MuhaffezViewModel()
 
@@ -236,6 +305,8 @@ struct MuhaffezViewModelTests {
         viewModel.quranText = "Some text"
         viewModel.matchedWords = [("word1", true), ("word2", false)]
         viewModel.voiceText = "Some voice text"
+        viewModel.voiceTextHasBesmillah = true
+        viewModel.voiceTextHasA3ozoBellah = true
 
         // Act
         viewModel.resetData()
@@ -245,6 +316,8 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.quranText.isEmpty)
         #expect(viewModel.matchedWords.isEmpty)
         #expect(viewModel.voiceText.isEmpty)
+        #expect(viewModel.voiceTextHasBesmillah == false)
+        #expect(viewModel.voiceTextHasA3ozoBellah == false)
     }
 
     @Test func testPeekHelperAddsTwoWordsWhenRecording() async throws {
@@ -288,5 +361,132 @@ struct MuhaffezViewModelTests {
 
         // Then: foundAyat should remain unchanged
         #expect(viewModel.foundAyat == [0, 1])
+    }
+
+    // MARK: - Tests for voiceText and updateTextToPredict
+
+    @Test func testVoiceTextSetsTextToPredict() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "الحمد لله رب العالمين"
+
+        // textToPredict should be normalized version of voiceText
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+    }
+
+    @Test func testVoiceTextDetectsA3ozoBellah() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم"
+
+        // Should automatically detect and set flag
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        // textToPredict should have A3ozoBellah removed
+        #expect(viewModel.textToPredict == "")
+    }
+
+    @Test func testVoiceTextWithA3ozoBellahAndText() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم الحمد لله رب العالمين"
+
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+    }
+
+    @Test func testUpdateTextToPredictWithBismillahOnly() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+
+        // Manually set the flag (normally set by updateFoundAyat)
+        viewModel.voiceTextHasBesmillah = true
+
+        // textToPredict should have Bismillah removed
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+    }
+
+    @Test func testUpdateTextToPredictWithA3ozoBellahOnly() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم الحمد لله رب العالمين"
+
+        // Flag is automatically set by voiceText didSet
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+    }
+
+    @Test func testUpdateTextToPredictWithBothA3ozoBellahAndBismillah() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+
+        // A3ozoBellah is automatically detected
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+
+        // Manually set Bismillah flag
+        viewModel.voiceTextHasBesmillah = true
+
+        // Both should be removed: first A3ozoBellah (5 words), then Bismillah (4 words)
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+    }
+
+    @Test func testUpdateTextToPredictRemovesA3ozoBellahFirst() async throws {
+        let viewModel = MuhaffezViewModel()
+        // A3ozoBellah (5 words) + Bismillah (4 words) + text
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب الناس"
+
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        viewModel.voiceTextHasBesmillah = true
+
+        // Should remove A3ozoBellah first, then Bismillah
+        #expect(viewModel.textToPredict == "قل اعوذ برب الناس")
+    }
+
+    @Test func testTextToPredictUpdatesVoiceWords() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "الحمد لله رب العالمين"
+
+        // voiceWords should be split from textToPredict
+        #expect(viewModel.voiceWords.count == 4)
+        #expect(viewModel.voiceWords[0] == "الحمد")
+        #expect(viewModel.voiceWords[1] == "لله")
+        #expect(viewModel.voiceWords[2] == "رب")
+        #expect(viewModel.voiceWords[3] == "العالمين")
+    }
+
+    @Test func testTextToPredictWithA3ozoBellahRemoved() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم الحمد لله"
+
+        // A3ozoBellah detected and removed automatically
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+
+        // voiceWords should only contain remaining words
+        #expect(viewModel.voiceWords.count == 2)
+        #expect(viewModel.voiceWords[0] == "الحمد")
+        #expect(viewModel.voiceWords[1] == "لله")
+    }
+
+    @Test func testFlagChangesUpdateTextToPredict() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+
+        // Initially textToPredict has full text
+        let initialTextToPredict = viewModel.textToPredict
+        #expect(initialTextToPredict == "بسم الله الرحمن الرحيم الحمد لله رب العالمين")
+
+        // Set Bismillah flag
+        viewModel.voiceTextHasBesmillah = true
+
+        // textToPredict should be updated
+        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
+        #expect(viewModel.textToPredict != initialTextToPredict)
+    }
+
+    @Test func testEmptyVoiceTextDoesNotTriggerUpdates() async throws {
+        let viewModel = MuhaffezViewModel()
+        let initialFoundAyatCount = viewModel.foundAyat.count
+
+        viewModel.voiceText = ""
+
+        // Should not trigger updateFoundAyat or updateMatchedWords
+        #expect(viewModel.foundAyat.count == initialFoundAyatCount)
+        #expect(viewModel.textToPredict == "")
+        #expect(viewModel.voiceWords.isEmpty)
     }
 }

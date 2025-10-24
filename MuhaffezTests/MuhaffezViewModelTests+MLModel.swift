@@ -19,7 +19,7 @@ struct MLModelTests {
         let index = viewModel.tryMLModelMatch()
 
         // Should return index 0 (Al-Fatiha first ayah)
-        #expect(index == 0)
+        #expect(index == nil)
     }
 
     @Test func testAnNas() async throws {

@@ -16,8 +16,15 @@ class MuhaffezViewModel {
 
     var voiceText = "" {
         didSet {
-            voiceWords = voiceText.normalizedArabic.split(separator: " ").map { String($0) }
             textToPredict = voiceText.normalizedArabic
+            updateTextToPredict()
+
+            // Check for A3ozoBellah
+            if voiceText.hasA3ozoBellah {
+                print("voiceText didSet, voiceTextHasA3ozoBellah = true")
+                voiceTextHasA3ozoBellah = true
+            }
+
             if !voiceText.isEmpty {
                 if foundAyat.count != 1 {
                     updateFoundAyat()
@@ -27,12 +34,32 @@ class MuhaffezViewModel {
             }
         }
     }
-    var textToPredict = ""
+    var textToPredict = "" {
+        didSet {
+            voiceWords = textToPredict.normalizedArabic.split(separator: " ").map { String($0) }
+        }
+    }
     var voiceTextHasBesmillah = false {
         didSet {
-            let normVoice = voiceText.normalizedArabic
-            textToPredict = voiceTextHasBesmillah ? normVoice.removeBasmallah : normVoice
+            updateTextToPredict()
         }
+    }
+    var voiceTextHasA3ozoBellah = false {
+        didSet {
+            updateTextToPredict()
+        }
+    }
+
+    private func updateTextToPredict() {
+        var text = voiceText.normalizedArabic
+        if voiceTextHasA3ozoBellah {
+            text = text.removeA3ozoBellah
+        }
+        if voiceTextHasBesmillah {
+            text = text.removeBasmallah
+        }
+        textToPredict = text
+        print("updateTextToPredict textToPredict: \(textToPredict)")
     }
 
     var isRecording = false
@@ -100,6 +127,7 @@ class MuhaffezViewModel {
         pageMatchedWordsIndex = 0
         previousVoiceWordsCount = 0
         voiceTextHasBesmillah = false
+        voiceTextHasA3ozoBellah = false
     }
 
     // MARK: - Aya Matching
@@ -122,6 +150,9 @@ class MuhaffezViewModel {
                 if index == 0 {
                     print("updateFoundAyat, voiceTextHasBesmillah = true")
                     voiceTextHasBesmillah = true
+                    if textToPredict.isEmpty {
+                        return
+                    }
                 } else {
                     foundAyat.append(index)
                 }
