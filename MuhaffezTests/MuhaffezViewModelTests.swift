@@ -46,6 +46,58 @@ struct MuhaffezViewModelTests {
         #expect(matchedTrues.contains("إِنَّ"))
     }
 
+    @Test func testBismillah() async throws {
+        let viewModel = MuhaffezViewModel()
+
+        // Test with exact Bismillah
+        viewModel.voiceText = "بسم الله الرحمن الرحيم"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+        #expect(viewModel.foundAyat.isEmpty) // Bismillah at index 0 should not be added to foundAyat
+
+        // Reset and test with Bismillah followed by another ayah
+        viewModel.resetData()
+        #expect(viewModel.voiceTextHasBesmillah == false)
+
+        viewModel.voiceText = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
+
+        #expect(viewModel.voiceTextHasBesmillah == true)
+        // Should find Al-Fatiha ayah 2 (index 1) after skipping Bismillah
+        #expect(viewModel.foundAyat.contains(1))
+    }
+
+    @Test func testBismillahAndAnNas() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "بسم الله الرحمن الرحيم قل اعوذ برب الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+
+        viewModel.resetData()
+        viewModel.voiceText = "بسم الله الرحمن الرحيم قل اعوذ برب الناس ملك الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+
+        viewModel.resetData()
+        viewModel.voiceText = "بسم الله الرحمن الرحيم قل اعوذ برب النا ملك الناس"
+        #expect(viewModel.voiceTextHasBesmillah == true)
+
+        // Wait for ML model or fallback matching with 10-second timeout
+        var timeout = 0
+        while viewModel.foundAyat.isEmpty && timeout < 3 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 3 {
+            #expect(Bool(false), "Timeout: Failed to find An-Nas (index 6197) after 10 seconds")
+        }
+
+        // Should return index 6197 (first ayah of Surat An-Nas)
+        #expect(viewModel.foundAyat.contains(6197))
+    }
+
     @Test func testPartialRecognition() async throws {
         let viewModel = MuhaffezViewModel()
 
@@ -177,8 +229,7 @@ struct MuhaffezViewModelTests {
         #expect(matchedTrues.isEmpty)
     }
 
-    @Test("resetData clears all properties")
-    func testResetData() async throws {
+    @Test func testResetData() async throws {
         // Arrange
         let viewModel = MuhaffezViewModel()
         viewModel.foundAyat = [1, 423]
@@ -196,8 +247,7 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.voiceText.isEmpty)
     }
 
-    @Test
-    func testPeekHelperAddsTwoWordsWhenRecording() async throws {
+    @Test func testPeekHelperAddsTwoWordsWhenRecording() async throws {
         // Given: initial state with some quranWords and matchedWords
         let viewModel = MuhaffezViewModel()  // Replace with actual class name
         viewModel.isRecording = true
@@ -215,8 +265,7 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.matchedWords[2].1 == false)
     }
 
-    @Test
-    func testPeekHelperDoesNothingIfNotRecording() async throws {
+    @Test func testPeekHelperDoesNothingIfNotRecording() async throws {
         // Given
         let viewModel = MuhaffezViewModel()
         viewModel.isRecording = false
@@ -230,16 +279,12 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.matchedWords.count == 1)
     }
 
-    @Test
-    func testUpdateFoundAyatDoesNothingWhenVoiceTextIsEmpty() async throws {
+    @Test func testUpdateFoundAyatDoesNothingWhenVoiceTextIsEmpty() async throws {
         // Given
         let viewModel = MuhaffezViewModel()  // Replace with your actual view model
         viewModel.voiceText = ""         // Empty voiceText triggers the guard
         //viewModel.quranLines = ["ayah1", "ayah2"]
         viewModel.foundAyat = [0, 1]
-
-        // When
-        //viewModel.updateFoundAyat()
 
         // Then: foundAyat should remain unchanged
         #expect(viewModel.foundAyat == [0, 1])

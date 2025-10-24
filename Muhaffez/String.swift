@@ -45,6 +45,12 @@ extension String {
         return text
     }
 
+    var removeBasmallah: String {
+        let words = self.split(separator: " ")
+        guard words.count > 4 else { return self}
+        return words.dropFirst(4).joined(separator: " ")
+    }
+
     func findIn(lines: [String]) -> String? {
         let normalizedSearch = self.normalizedArabic
         return lines.first { line in

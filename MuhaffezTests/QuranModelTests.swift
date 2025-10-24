@@ -102,9 +102,8 @@ struct QuranModelTests {
             #expect(model.rub3NumberFor(ayahIndex: lastRub3 + 10) == 30)
         }
     }
-    
-    @Test("rub3Number covers last return line")
-    func testRub3Number_LastLine() async throws {
+
+    @Test func testRub3Number_LastLine() async throws {
         // Setup a mock model
         let model = QuranModel.shared
         
@@ -116,8 +115,7 @@ struct QuranModelTests {
         #expect(result == model.rub3Markers.count + 1)
     }
     
-    @Test("Test juz2Number(forAyahIndex:)")
-    func testJuz2Number() async throws {
+    @Test func testJuz2Number() async throws {
         let model = QuranModel.shared
         
         // Each juz = 8 rub3
@@ -203,8 +201,7 @@ struct QuranModelTests {
         #expect(tooLargeIndexSurah.isEmpty)
     }
     
-    @Test
-    func testIsEndOfSurah() async throws {
+    @Test func testIsEndOfSurah() async throws {
         // Arrange: A fake QuranModel with some markers
         let model = QuranModel.shared
         
@@ -214,8 +211,7 @@ struct QuranModelTests {
         #expect(!model.isEndOfSurah(21))
     }
     
-    @Test
-    func testIsEndOfRub3() async throws {
+    @Test func testIsEndOfRub3() async throws {
         // Arrange: A fake QuranModel with some markers
         let model = QuranModel.shared
         
@@ -223,10 +219,8 @@ struct QuranModelTests {
         #expect(!model.isEndOfRub3(6))
         #expect(!model.isEndOfRub3(21))
     }
-    
-    
-    @Test("Fills right page when ayah is on right page")
-    func testFillRightPage() {
+
+    @Test func testFillRightPage() {
         let viewModel = MuhaffezViewModel()
         let ayahIndex = 1
         let quranModel = QuranModel.shared
@@ -237,9 +231,8 @@ struct QuranModelTests {
         #expect(viewModel.tempPage.surahName == "الفاتحة")
         #expect(viewModel.tempPage.pageNumber == 1)
     }
-    
-    @Test("Fills left page when ayah is on left page")
-    func testFillLeftPage() {
+
+    @Test func testFillLeftPage() {
         let viewModel = MuhaffezViewModel()
         let ayahIndex = 10
         let quranModel = QuranModel.shared
@@ -251,8 +244,7 @@ struct QuranModelTests {
         #expect(viewModel.tempPage.pageNumber == 2)
     }
     
-    @Test
-    func testIsRightPage() {
+    @Test func testIsRightPage() {
         // Given
         // A dummy implementation for pageNumber(forAyahIndex:) for testing
         func pageNumber(forAyahIndex index: Int) -> Int {
@@ -269,10 +261,6 @@ struct QuranModelTests {
         #expect(isRightPage(forAyahIndex: 3))  // 3 % 2 == 1 → true
         #expect(!isRightPage(forAyahIndex: 10))
     }
-    
-    //    func isRightPage(forAyahIndex index: Int) -> Bool {
-    //        return index % 2 == 1
-    //    }
     
     func updatePageModels(viewModel: inout MuhaffezViewModel, ayahIndex index: Int) {
         // Simulate updating pages
@@ -291,8 +279,7 @@ struct QuranModelTests {
         }
     }
     
-    @Test
-    func testUpdatePageModelsIfNeeded() {
+    @Test func testUpdatePageModelsIfNeeded() {
         var viewModel = MuhaffezViewModel()
         viewModel.currentPageIsRight = false
         
@@ -302,8 +289,7 @@ struct QuranModelTests {
         #expect(viewModel.rightPage.text.characters.count > 0)
     }
     
-    @Test
-    func testClearsPagesWhenRightPage() {
+    @Test func testClearsPagesWhenRightPage() {
         var viewModel = MuhaffezViewModel()
         viewModel.currentPageIsRight = true
         
