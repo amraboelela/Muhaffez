@@ -132,6 +132,7 @@ class MuhaffezViewModel {
 
         print("updateFoundAyat foundAyat: \(foundAyat)")
         updateQuranText()
+        updateMatchedWords()
     }
 
     // Returns ayah index if best match from top 5 ML predictions has similarity > 85%

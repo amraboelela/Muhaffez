@@ -87,6 +87,17 @@ struct MuhaffezViewModelTests {
     @Test func testMatchedWordsExactMatch() async throws {
         let viewModel = MuhaffezViewModel()
         viewModel.voiceText = "ان الله يامركم ان تؤدوا الامانات الى اهلها"
+
+        // Wait for the ML model or fallback matching to find the ayah
+        var timeout = 0
+        while viewModel.foundAyat.count == 0 && timeout < 10 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 10 {
+            #expect(Bool(false), "Timeout: Failed to find ayah after 10 seconds")
+        }
+
         let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.count == 8)
     }
