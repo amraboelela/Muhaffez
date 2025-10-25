@@ -113,21 +113,40 @@ struct StringTests {
         let text1 = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
         let result1 = text1.removeBasmallah
         #expect(result1 == "الحمد لله رب العالمين")
-        
+
         // Test with exact Bismillah (should return empty string)
         let text2 = "بسم الله الرحمن الرحيم"
         let result2 = text2.removeBasmallah
         #expect(result2 == "")
-        
-        // Test with less than 5 words (should return original)
+
         let text3 = "بسم الله الرحمن"
         let result3 = text3.removeBasmallah
-        #expect(result3 == text3)
-        
+        #expect(result3 == "")
+
         // Test with text that doesn't start with Bismillah
         let text4 = "الحمد لله رب العالمين"
         let result4 = text4.removeBasmallah
         #expect(result4 == "")
+
+        // Test with incomplete Bismillah (missing "الرحمن")
+        let text5 = "بسم الله الرحيم الحمد لله رب العالمين"
+        let result5 = text5.removeBasmallah
+        #expect(result5 == "الحمد لله رب العالمين")
+
+        // Test with incomplete Bismillah (missing "الرحمن") - only Bismillah
+        let text6 = "بسم الله الرحيم"
+        let result6 = text6.removeBasmallah
+        #expect(result6 == "")
+
+        // Test with incomplete Bismillah (missing "الرحيم" - first 3 words)
+        let text7 = "بسم الله الرحمن الحمد لله رب العالمين"
+        let result7 = text7.removeBasmallah
+        #expect(result7 == "الحمد لله رب العالمين")
+
+        // Test with incomplete Bismillah (only first 3 words)
+        let text8 = "بسم الله الرحمن"
+        let result8 = text8.removeBasmallah
+        #expect(result8 == "")
     }
     
     @Test func testRemoveA3ozoBellah() async throws {

@@ -46,9 +46,46 @@ extension String {
     }
 
     var removeBasmallah: String {
-        let words = self.split(separator: " ")
-        guard words.count >= 4 else { return self}
-        return words.dropFirst(4).joined(separator: " ")
+        // Expected Bismillah words: ["بسم", "الله", "الرحمن", "الرحيم"]
+        let bismillahWords = ["بسم", "الله", "الرحمن", "الرحيم"]
+        let normalizedText = self.normalizedArabic
+        let words = normalizedText.split(separator: " ").map { String($0) }
+
+        // Need at least 3 words to check for incomplete Bismillah
+        guard words.count >= 3 else { return self }
+
+        // Check if starts with "بسم الله"
+        let similarityThreshold = 0.8
+        if words[0].similarity(to: bismillahWords[0]) < similarityThreshold ||
+           words[1].similarity(to: bismillahWords[1]) < similarityThreshold {
+            return "" // Doesn't start with Bismillah at all
+        }
+
+        // Check if we have 4 words and they match full Bismillah
+        if words.count >= 4 {
+            let word2Matches = words[2].similarity(to: bismillahWords[2]) >= similarityThreshold
+            let word3Matches = words[3].similarity(to: bismillahWords[3]) >= similarityThreshold
+
+            if word2Matches && word3Matches {
+                // Full Bismillah: drop first 4 words
+                return words.dropFirst(4).joined(separator: " ")
+            }
+        }
+
+        // Check for incomplete Bismillah (3 words)
+        if words.count >= 3 {
+            // Case 1: "بسم الله الرحمن" (missing "الرحيم")
+            if words[2].similarity(to: bismillahWords[2]) >= similarityThreshold {
+                return words.dropFirst(3).joined(separator: " ")
+            }
+            // Case 2: "بسم الله الرحيم" (missing "الرحمن")
+            if words[2].similarity(to: bismillahWords[3]) >= similarityThreshold {
+                return words.dropFirst(3).joined(separator: " ")
+            }
+        }
+
+        // Doesn't match Bismillah pattern
+        return ""
     }
 
     var removeA3ozoBellah: String {
