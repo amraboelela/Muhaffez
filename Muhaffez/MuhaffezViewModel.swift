@@ -258,7 +258,6 @@ class MuhaffezViewModel {
 
         for (index, line) in quranLines.enumerated() {
             let ayahNorm = line.normalizedArabic
-            guard ayahNorm.count >= textToPredict.count else { continue }
 
             let ayahPrefix = String(ayahNorm.prefix(textToPredict.count))
             let textPrefix = String(textToPredict.prefix(ayahPrefix.count))
@@ -269,12 +268,15 @@ class MuhaffezViewModel {
                 bestIndex = index
             }
             if similarity > 0.9 {
+                print("Early break at index \(index): \(line)")
+                print("  similarity: \(String(format: "%.2f", similarity))")
                 break
             }
         }
 
         if let bestIndex, bestIndex > 0 {
             print("performFallbackMatch bestIndex: \(bestIndex)")
+            print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
             foundAyat = [bestIndex]
             updateQuranText()
             updateMatchedWords()

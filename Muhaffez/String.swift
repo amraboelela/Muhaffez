@@ -58,7 +58,7 @@ extension String {
         let similarityThreshold = 0.8
         if words[0].similarity(to: bismillahWords[0]) < similarityThreshold ||
            words[1].similarity(to: bismillahWords[1]) < similarityThreshold {
-            return "" // Doesn't start with Bismillah at all
+            return self // Doesn't start with Bismillah, return unchanged
         }
 
         // Check if we have 4 words and they match full Bismillah
@@ -84,8 +84,8 @@ extension String {
             }
         }
 
-        // Doesn't match Bismillah pattern
-        return ""
+        // Doesn't match Bismillah pattern, return unchanged
+        return self
     }
 
     var removeA3ozoBellah: String {

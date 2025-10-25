@@ -126,7 +126,7 @@ struct StringTests {
         // Test with text that doesn't start with Bismillah
         let text4 = "الحمد لله رب العالمين"
         let result4 = text4.removeBasmallah
-        #expect(result4 == "")
+        #expect(result4 == text4) // Should return unchanged
 
         // Test with incomplete Bismillah (missing "الرحمن")
         let text5 = "بسم الله الرحيم الحمد لله رب العالمين"

@@ -485,4 +485,28 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.textToPredict == "")
         #expect(viewModel.voiceWords.isEmpty)
     }
+
+    @Test func testIncompleteBismillahWithAlIkhlas() async throws {
+        let viewModel = MuhaffezViewModel()
+        // "بس" is incomplete "بسم" + Al-Ikhlas ayahs
+        viewModel.voiceText = "بس قل الله احد الله الصمد لم يلد ولم يولد ولم يكن له كفوا احد"
+
+        // Wait for ML model or fallback matching
+        var timeout = 0
+        while viewModel.foundAyat.isEmpty && timeout < 3 {
+            try await Task.sleep(for: .seconds(1))
+            timeout += 1
+        }
+        if timeout >= 3 {
+            #expect(Bool(false), "Timeout: Failed to find Al-Ikhlas after 3 seconds")
+        }
+
+        print("Found ayat: \(viewModel.foundAyat)")
+        if !viewModel.foundAyat.isEmpty {
+            print("Found ayah text: \(quranLines[viewModel.foundAyat.first!])")
+        }
+
+        // Al-Ikhlas starts at index 6221: قُل هُوَ اللَّهُ أَحَدٌ
+        #expect(viewModel.foundAyat.contains(6188))
+    }
 }
