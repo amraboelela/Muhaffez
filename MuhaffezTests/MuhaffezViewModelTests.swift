@@ -30,6 +30,9 @@ struct MuhaffezViewModelTests {
         let viewModel = MuhaffezViewModel()
         // Missing tashkeel + hamza variant
         viewModel.voiceText = "ان الله يامرك"
+        while viewModel.matchedWords.isEmpty {
+            try await Task.sleep(for: .seconds(1))
+        }
         var matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         print("matchedTrues: \(matchedTrues)")
         #expect(matchedTrues.contains("إِنَّ"))
