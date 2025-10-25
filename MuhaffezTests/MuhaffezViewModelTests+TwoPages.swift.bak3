@@ -51,7 +51,7 @@ struct MuhaffezViewModelTwoPagesTests {
 
         viewModel.voiceText = "إِنَّ رَبَّهُم بِهِم يَومَئِذٍ لَخَبيرٌ القارِعَةُ"
         #expect(viewModel.voiceWords.count == 6)
-        while viewModel.foundAyat.count == 0 || viewModel.updatingFoundAyat {
+        while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
         textString = viewModel.leftPage.textString
@@ -67,18 +67,15 @@ struct MuhaffezViewModelTwoPagesTests {
 
         viewModel.resetData()
         viewModel.voiceText = "عَينًا فيها تُسَمّىٰ سَلسَبيلًا"
-        while viewModel.foundAyat.count == 0 || viewModel.updatingFoundAyat {
+        textString = viewModel.rightPage.textString
+        while viewModel.foundAyat.count == 0 {
             try await Task.sleep(for: .seconds(1))
         }
-        textString = viewModel.rightPage.textString
         #expect(textString.contains("🌼"))
 
         viewModel.resetData()
         viewModel.voiceText = "نحن جعلناها تذكرة"
         viewModel.voiceText = "نحن جعلناها تذكرة فسبح باسم ربك العظيم"
-        while viewModel.foundAyat.count == 0 || viewModel.updatingFoundAyat {
-            try await Task.sleep(for: .seconds(1))
-        }
         textString = viewModel.leftPage.textString
         #expect(textString.contains("نَحنُ"))
     }

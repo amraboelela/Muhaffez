@@ -166,9 +166,14 @@ class MuhaffezViewModel {
         }
 
         print("updateFoundAyat foundAyat: \(foundAyat)")
+        if !foundAyat.isEmpty {
+            for ayahIndex in foundAyat {
+                print("  Found ayah [\(ayahIndex)]: \(quranLines[ayahIndex])")
+            }
+        }
         // Fallback with debounce if no matches
-        if foundAyat.isEmpty || textToPredict.count < 35 {
-            print("foundAyat.isEmpty || textToPredict.count < 35")
+        if foundAyat.isEmpty || textToPredict.count < 17 {
+            print("foundAyat.isEmpty || textToPredict.count < 17")
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.performFallbackMatch()
