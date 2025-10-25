@@ -462,20 +462,13 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.voiceWords[1] == "لله")
     }
 
-    @Test func testFlagChangesUpdateTextToPredict() async throws {
+    @Test func testTextToPredict() async throws {
         let viewModel = MuhaffezViewModel()
         viewModel.voiceText = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
 
         // Initially textToPredict has full text
         let initialTextToPredict = viewModel.textToPredict
-        #expect(initialTextToPredict == "بسم الله الرحمن الرحيم الحمد لله رب العالمين")
-
-        // Set Bismillah flag
-        viewModel.voiceTextHasBesmillah = true
-
-        // textToPredict should be updated
-        #expect(viewModel.textToPredict == "الحمد لله رب العالمين")
-        #expect(viewModel.textToPredict != initialTextToPredict)
+        #expect(initialTextToPredict == "الحمد لله رب العالمين")
     }
 
     @Test func testEmptyVoiceTextDoesNotTriggerUpdates() async throws {

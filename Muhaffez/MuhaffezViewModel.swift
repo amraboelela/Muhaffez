@@ -20,16 +20,18 @@ class MuhaffezViewModel {
             updateTextToPredict()
 
             // Check for A3ozoBellah
-            if voiceText.hasA3ozoBellah {
+            if !voiceTextHasA3ozoBellah && voiceText.hasA3ozoBellah {
                 print("voiceText didSet, voiceTextHasA3ozoBellah = true")
                 voiceTextHasA3ozoBellah = true
             }
 
             if !voiceText.isEmpty {
-                if foundAyat.count != 1 {
-                    updateFoundAyat()
+                if foundAyat.count == 1 {
+                    if !updatingFoundAyat {
+                        updateMatchedWords()
+                    }
                 } else {
-                    updateMatchedWords()
+                    updateFoundAyat()
                 }
             }
         }
@@ -63,6 +65,7 @@ class MuhaffezViewModel {
     }
 
     var isRecording = false
+    var updatingFoundAyat = false
     var matchedWords: [(word: String, isMatched: Bool)] = [] {
         didSet {
             updatePages()
@@ -128,11 +131,14 @@ class MuhaffezViewModel {
         previousVoiceWordsCount = 0
         voiceTextHasBesmillah = false
         voiceTextHasA3ozoBellah = false
+        updatingFoundAyat = false
     }
 
     // MARK: - Aya Matching
 
     private func updateFoundAyat() {
+        print("updateFoundAyat")
+        updatingFoundAyat = true
         debounceTimer?.invalidate()
         guard foundAyat.count != 1 else { return }
 
@@ -159,19 +165,22 @@ class MuhaffezViewModel {
             }
         }
 
+        print("updateFoundAyat foundAyat: \(foundAyat)")
         // Fallback with debounce if no matches
         if foundAyat.isEmpty || textToPredict.count < 35 {
-            print("updateFoundAyat foundAyat.isEmpty")
+            print("foundAyat.isEmpty || textToPredict.count < 35")
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.performFallbackMatch()
                 }
             }
+            return
         }
 
-        print("updateFoundAyat foundAyat: \(foundAyat)")
+        print("updateFoundAyat foundAyat 2: \(foundAyat)")
         updateQuranText()
         updateMatchedWords()
+        updatingFoundAyat = false
     }
 
     // Returns ayah index if best match from top 5 ML predictions has similarity > 85%
@@ -215,6 +224,9 @@ class MuhaffezViewModel {
     }
 
     private func performFallbackMatch() {
+        defer {
+            updatingFoundAyat = false
+        }
         print("performFallbackMatch textToPredict: \(textToPredict)")
 
         // Use ML model for prediction - pass original voiceText, not normalized

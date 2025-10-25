@@ -68,7 +68,7 @@ extension String {
 
         // Check similarity of first 5 words to a3ozo words
         let similarityThreshold = 0.8
-        for i in 0..<5 {
+        for i in 0..<4 {
             let similarity = words[i].similarity(to: a3ozoWords[i])
             if similarity < similarityThreshold {
                 return false
