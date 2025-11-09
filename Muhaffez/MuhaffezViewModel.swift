@@ -290,7 +290,7 @@ class MuhaffezViewModel {
             if foundAyat.count == 1 {
                 print("updateQuranText firstIndex: \(firstIndex)")
                 print("updateQuranText quranLines[firstIndex]: \(quranLines[firstIndex])")
-                let endIndex = min(firstIndex + 200, quranLines.count)
+                let endIndex = min(firstIndex + 500, quranLines.count)
                 let extraLines = quranLines[(firstIndex + 1)..<endIndex]
                 quranText = ([quranText] + extraLines).joined(separator: " ")
             }

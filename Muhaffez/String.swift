@@ -25,23 +25,9 @@ extension String {
 
         // 2. Normalize hamza variants
         let hamzaMap: [Character: Character] = [
-            "إ": "ا", "أ": "ا", "آ": "ا",
-            "ؤ": "و", "ئ": "ي"
+            "إ": "ا", "أ": "ا", "آ": "ا"
         ]
         text = String(text.map { hamzaMap[$0] ?? $0 })
-
-        //        let a3ozo = "اعوذ بالله من الشيطان الرجيم"
-        //        if text.hasPrefix(a3ozo) {
-        //            text.removeSubrange(text.startIndex..<text.index(text.startIndex, offsetBy: a3ozo.count))
-        //            text = text.trimmingCharacters(in: .whitespaces)
-        //        }
-        //        // 3. Remove "بسم الله الرحمن الرحيم" at the beginning if present
-        //        let basmala = "بسم الله الرحمن الرحيم"
-        //        if text.hasPrefix(basmala) {
-        //            text.removeSubrange(text.startIndex..<text.index(text.startIndex, offsetBy: basmala.count))
-        //            text = text.trimmingCharacters(in: .whitespaces)
-        //        }
-
         return text
     }
 

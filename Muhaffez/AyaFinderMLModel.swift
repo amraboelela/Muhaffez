@@ -82,7 +82,7 @@ class AyaFinderMLModel {
         // Create array with indices and probabilities
         var indexedProbs: [(index: Int, prob: Double)] = []
         for (i, prob) in probabilities.enumerated() {
-            indexedProbs.append((i, prob))
+            indexedProbs.append((i+1, prob))
         }
 
         // Sort by probability descending
