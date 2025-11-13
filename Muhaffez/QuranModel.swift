@@ -252,7 +252,7 @@ class QuranModel {
         if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
             updatePages(viewModel: viewModel, ayahIndex: index)
             if viewModel.currentPageIsRight {
-                viewModel.leftPage.text = AttributedString()
+                viewModel.leftPage.reset()
             }
         }
     }

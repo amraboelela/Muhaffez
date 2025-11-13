@@ -62,11 +62,6 @@ extension MuhaffezViewModel {
                 advanceLine()
             }
         }
-        if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-            rightPage = tempPage
-        } else {
-            leftPage = tempPage
-        }
     }
 
     // MARK: - Helpers
@@ -74,7 +69,7 @@ extension MuhaffezViewModel {
     private func attributedWord(for word: String, matched: Bool) -> AttributedString {
         var attributedWord = AttributedString(word)
         attributedWord.foregroundColor = matched ? .primary : .red
-        attributedWord.font = .custom("KFGQPC Uthmanic Script", size: 28)
+        attributedWord.font = .custom("Traditional Arabic", size: 28)
         return attributedWord
     }
 
@@ -95,7 +90,7 @@ extension MuhaffezViewModel {
         let surahName = quranModel.surahNameFor(ayahIndex: ayaIndex)
         let separator = AttributedString("\n\t\t\t\t\t")
         var name = AttributedString("سورة \(surahName)")
-        name.font = .custom("KFGQPC Uthmanic Script", size: 30)
+        name.font = .custom("Traditional Arabic", size: 30)
         name.underlineStyle = Text.LineStyle.single
         let separator2 = AttributedString("\n\n")
         return separator + name + separator2
