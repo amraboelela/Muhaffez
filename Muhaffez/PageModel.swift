@@ -18,6 +18,10 @@ struct PageModel {
         String(text.characters)
     }
 
+    var isEmpty: Bool {
+        textString.isEmpty
+    }
+
     mutating func reset() {
         juzNumber = 0
         surahName = ""

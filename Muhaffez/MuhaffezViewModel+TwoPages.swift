@@ -63,7 +63,9 @@ extension MuhaffezViewModel {
             }
         }
         if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
-            rightPage = tempPage
+            if leftPage.isEmpty {
+                rightPage = tempPage
+            }
         } else {
             leftPage = tempPage
         }
