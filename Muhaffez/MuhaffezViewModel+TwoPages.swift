@@ -62,6 +62,11 @@ extension MuhaffezViewModel {
                 advanceLine()
             }
         }
+        if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+            rightPage = tempPage
+        } else {
+            leftPage = tempPage
+        }
     }
 
     // MARK: - Helpers
