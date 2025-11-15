@@ -1,0 +1,36 @@
+============================================================
+QURAN SEQ2SEQ TRANSFORMER TRAINING
+============================================================
+
+🚀 Using Metal GPU (Apple Silicon)
+Device: mps
+
+Vocabulary size: 14756
+✓ Total ayat: 6204
+✓ Training format: القاريء: [first 10 words] → الاية: [first 5 words]
+
+No existing checkpoint found, starting from scratch
+
+Total parameters: 12,308,388
+
+Starting training for up to 100 epochs...
+Initial Learning Rate: 1.0e-04
+
+Epoch 1 | Loss=9.6518 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 2 | Loss=9.3640 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 3 | Loss=9.1970 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 4 | Loss=9.0943 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 5 | Loss=9.0131 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 6 | Loss=8.9435 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 7 | Loss=8.8837 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 8 | Loss=8.8318 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+
+Epoch 9 | Loss=8.7853 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+

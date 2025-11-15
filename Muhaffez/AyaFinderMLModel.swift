@@ -32,12 +32,15 @@ class AyaFinderMLModel {
     private func loadVocabulary() {
         guard let url = Bundle.main.url(forResource: "vocabulary", withExtension: "json"),
               let data = try? Data(contentsOf: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let charToToken = json["char_to_token"] as? [String: Int] else {
+              let vocabArray = try? JSONSerialization.jsonObject(with: data) as? [String] else {
             print("Error loading vocabulary")
             return
         }
-        vocabulary = charToToken
+
+        // Build word-to-index mapping from array
+        for (index, word) in vocabArray.enumerated() {
+            vocabulary[word] = index
+        }
         print("Vocabulary loaded: \(vocabulary.count) tokens")
     }
 
