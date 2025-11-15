@@ -3,9 +3,18 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 from seq2seq_model import QuranSeq2SeqModel, load_vocabulary, load_quran_data
 import time
-import sys
+
+
+def load_dataset_from_json(json_path):
+    """Load pre-generated dataset from JSON file"""
+    with open(json_path, 'r', encoding='utf-8') as f:
+        dataset = json.load(f)
+    return dataset
 
 
 def normalize_arabic(text):
@@ -19,10 +28,15 @@ def normalize_arabic(text):
 
     text = ''.join(c for c in text if c not in arabic_diacritics)
 
-    # Normalize hamza variants
+    # Normalize hamza variants (keep ؤ and ئ as is, only normalize alif variants)
+    # Note: We keep ئ (yeh with hamza) and ؤ (waw with hamza) as is
+    # because they represent distinct sounds
     hamza_map = {
-        'إ': 'ا', 'أ': 'ا', 'آ': 'ا',
-        'ؤ': 'و', 'ئ': 'ي'
+        'إ': 'ا',  # alif with hamza below
+        'أ': 'ا',  # alif with hamza above
+        'آ': 'ا',  # alif with madda
+        # 'ؤ': 'و' - NOT normalized, kept as is
+        # 'ئ': 'ي' - NOT normalized, kept as is
     }
 
     for old, new in hamza_map.items():
@@ -43,8 +57,10 @@ class QuranSeq2SeqDataset(Dataset):
         self.max_input_words = max_input_words
         self.max_output_words = max_output_words
         self.unk_token = word_to_idx.get('<unk>', 0)
+        self.bos_token = word_to_idx.get('<s>', 1)
         self.reader_token = word_to_idx.get('القاريء:', 3)
         self.ayah_token = word_to_idx.get('الاية:', 4)
+        self.eos_token = word_to_idx.get('</s>', 2)
 
     def __len__(self):
         return len(self.ayat)
@@ -69,37 +85,41 @@ class QuranSeq2SeqDataset(Dataset):
         # Tokenize into words
         words = self.tokenize_words(ayah)
 
-        # Skip if ayah has fewer than max_output_words
-        if len(words) < self.max_output_words:
-            words = words + [''] * (self.max_output_words - len(words))
-
         # Get first 10 words for input
         input_words = words[:self.max_input_words]
 
-        # Get first 5 words for output
-        output_words = words[:self.max_output_words]
+        # Get up to 5 words for output (no padding)
+        output_words = words[:min(len(words), self.max_output_words)]
 
-        # Build sequence: القاريء: [input_words] الاية: [output_words]
-        sequence_tokens = [self.reader_token]
+        # Build sequence: <s> القاريء: [input_words] الاية: [output_words] </s>
+        sequence_tokens = [self.bos_token, self.reader_token]
         sequence_tokens.extend(self.words_to_tokens(input_words))
         sequence_tokens.append(self.ayah_token)
         output_tokens = self.words_to_tokens(output_words)
         sequence_tokens.extend(output_tokens)
+        sequence_tokens.append(self.eos_token)
 
         # Convert to tensor
         x = torch.tensor(sequence_tokens, dtype=torch.long)
 
         # Create target: shift by one position for next-token prediction
-        y = torch.tensor(sequence_tokens[1:] + [self.unk_token], dtype=torch.long)
+        # The last position predicts EOS, which we don't need to supervise
+        y = torch.tensor(sequence_tokens[1:] + [self.eos_token], dtype=torch.long)
 
-        # Create loss mask: only compute loss for tokens after 'الاية:'
+        # Create loss mask: ONLY supervise output tokens (not EOS)
+        # mask[i] = 1 means we supervise predicting y[i] from x[i]
         mask = torch.zeros(len(sequence_tokens), dtype=torch.float)
 
         # Find position of 'الاية:' token
         ayah_pos = sequence_tokens.index(self.ayah_token)
 
-        # Set mask to 1 for positions after 'الاية:'
-        mask[ayah_pos+1:] = 1.0
+        # Supervise from الاية: position for exactly len(output_tokens) positions
+        # - Position ayah_pos (الاية:) → predicts first output word ✓
+        # - Position ayah_pos+1 (first output) → predicts second output word ✓
+        # - ...
+        # - Position ayah_pos+len(output)-1 (last output) → predicts EOS ✓
+        # Do NOT supervise position ayah_pos+len(output) (EOS) → nothing
+        mask[ayah_pos:ayah_pos + len(output_tokens)] = 1.0
 
         return x, y, mask, output_tokens
 
@@ -110,23 +130,34 @@ def collate_fn(batch):
 
     # Find max length in batch
     max_len = max(len(x) for x in xs)
+    pad_token = 0  # <unk> - will be masked by attention_mask
+    ignore_index = -100  # Standard ignore value for CrossEntropyLoss
 
     # Pad sequences
     padded_xs = []
     padded_ys = []
     padded_masks = []
+    attention_masks = []
 
     for x, y, mask in zip(xs, ys, masks):
         pad_len = max_len - len(x)
-        padded_x = torch.cat([x, torch.zeros(pad_len, dtype=torch.long)])
-        padded_y = torch.cat([y, torch.zeros(pad_len, dtype=torch.long)])
+        # Pad inputs with <unk> (will be masked)
+        padded_x = torch.cat([x, torch.full((pad_len,), pad_token, dtype=torch.long)])
+        # Pad targets with -100 (ignored by CrossEntropyLoss)
+        padded_y = torch.cat([y, torch.full((pad_len,), ignore_index, dtype=torch.long)])
+        # Loss mask (for supervising only after الاية:)
         padded_mask = torch.cat([mask, torch.zeros(pad_len, dtype=torch.float)])
+        # Attention mask: 1 = real token, 0 = padding
+        attention_mask = torch.cat([torch.ones(len(x), dtype=torch.long),
+                                   torch.zeros(pad_len, dtype=torch.long)])
 
         padded_xs.append(padded_x)
         padded_ys.append(padded_y)
         padded_masks.append(padded_mask)
+        attention_masks.append(attention_mask)
 
-    return torch.stack(padded_xs), torch.stack(padded_ys), torch.stack(padded_masks), outputs
+    return (torch.stack(padded_xs), torch.stack(padded_ys),
+            torch.stack(padded_masks), torch.stack(attention_masks), outputs)
 
 
 def calculate_accuracy(model, data_loader, device, idx_to_word):
@@ -136,13 +167,14 @@ def calculate_accuracy(model, data_loader, device, idx_to_word):
     total_sequences = 0
 
     with torch.no_grad():
-        for data, target, mask, expected_outputs in data_loader:
+        for data, target, mask, attention_mask, expected_outputs in data_loader:
             data = data.to(device)
             target = target.to(device)
             mask = mask.to(device)
+            attention_mask = attention_mask.to(device)
 
             # Forward pass
-            logits = model(data)
+            logits = model(data, attention_mask=attention_mask)
 
             # Get predictions
             predictions = torch.argmax(logits, dim=-1)
@@ -179,13 +211,80 @@ def log_print(message, log_file=None):
             f.write(message + '\n')
 
 
-def train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None):
+def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples=3, log_file=None):
+    """Show sample predictions for debugging"""
+    model.eval()
+    samples_shown = 0
+
+    reader_token = 3  # القاريء:
+    ayah_token = 4    # الاية:
+
+    with torch.no_grad():
+        for data, target, mask, attention_mask, expected_outputs in data_loader:
+            if samples_shown >= num_samples:
+                break
+
+            data = data.to(device)
+            attention_mask = attention_mask.to(device)
+            logits = model(data, attention_mask=attention_mask)
+            predictions = torch.argmax(logits, dim=-1)
+
+            for i in range(data.shape[0]):
+                if samples_shown >= num_samples:
+                    break
+
+                # Find where the mask starts
+                mask_positions = torch.where(mask[i] > 0)[0]
+                if len(mask_positions) == 0:
+                    continue
+
+                # Get the full input sequence
+                input_seq = data[i].cpu().tolist()
+
+                # Find positions of special tokens
+                try:
+                    reader_pos = input_seq.index(reader_token)
+                    ayah_pos = input_seq.index(ayah_token)
+                except ValueError:
+                    continue
+
+                # Extract input words (between القاريء: and الاية:)
+                input_words_tokens = input_seq[reader_pos+1:ayah_pos]
+                input_words = [idx_to_word.get(token, '<unk>') for token in input_words_tokens]
+
+                # Get predicted tokens using straight argmax
+                predicted_tokens = []
+                for pos in enumerate(mask_positions[:5]):  # Only look at first 5 positions
+                    predicted_tokens.append(predictions[i, pos[1]].item())
+
+                expected_tokens = expected_outputs[i]
+
+                # Convert to words
+                predicted_words = [idx_to_word.get(token, '<unk>') for token in predicted_tokens[:5]]
+                expected_words = [idx_to_word.get(token, '<unk>') for token in expected_tokens[:5]]
+
+                # Count matches
+                matches = sum(1 for p, e in zip(predicted_tokens[:5], expected_tokens[:5]) if p == e)
+
+                log_print(f'  Sample:', log_file)
+                log_print(f'    القاريء: {" ".join(input_words)}', log_file)
+                log_print(f'    الاية: {" ".join(expected_words)}', log_file)
+                log_print(f'    Predicted: {" ".join(predicted_words)} | Match={matches}/5', log_file)
+
+                samples_shown += 1
+
+    model.train()
+
+
+
+def train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None, prev_loss_init=None):
     """Train the seq2seq model"""
     model.train()
 
     best_accuracy = 0.0
     best_loss = float('inf')
     best_model_state = None
+    prev_loss = prev_loss_init if prev_loss_init is not None else float('inf')
 
     total_start_time = time.time()
 
@@ -194,16 +293,14 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
         total_loss = 0
         total_tokens = 0
 
-        # Zero gradients once at the start of epoch
-        optimizer.zero_grad()
-
-        for batch_idx, (data, target, mask, _) in enumerate(train_loader):
+        for batch_idx, (data, target, mask, attention_mask, _) in enumerate(train_loader):
             data = data.to(device)
             target = target.to(device)
             mask = mask.to(device)
+            attention_mask = attention_mask.to(device)
 
             # Forward pass
-            logits = model(data)
+            logits = model(data, attention_mask=attention_mask)
 
             # Reshape for loss computation
             batch_size, seq_len, vocab_size = logits.shape
@@ -212,6 +309,7 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
             mask_flat = mask.view(-1)
 
             # Compute loss only on masked positions
+            # Note: targets with -100 are automatically ignored by CrossEntropyLoss
             loss_per_token = criterion(logits_flat, target_flat)
             loss_per_token = loss_per_token * mask_flat
 
@@ -219,15 +317,14 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
             num_tokens = mask_flat.sum()
             loss = loss_per_token.sum() / (num_tokens + 1e-8)
 
-            # Accumulate gradients (don't step optimizer yet)
+            # Backpropagation and optimization (per batch)
+            optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
 
             total_loss += loss.item() * num_tokens.item()
             total_tokens += num_tokens.item()
-
-        # After processing all batches, clip gradients and update weights ONCE per epoch
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
 
         # Calculate accuracy
         accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
@@ -243,7 +340,10 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
         msg = f'Epoch {epoch+1} | Loss={avg_loss:.4f} | Accuracy={accuracy:.1f}% | LR={scheduler.get_last_lr()[0]:.1e} | Time={time_str}'
         log_print(msg, log_file)
 
-        # Save best checkpoint (based on accuracy)
+        # Show sample predictions
+        show_sample_predictions(model, train_loader, device, idx_to_word, num_samples=1, log_file=log_file)
+
+        # Save best checkpoint (based on highest accuracy only)
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             best_loss = avg_loss
@@ -255,16 +355,23 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
                 'vocab_size': model.vocab_size,
                 'loss': avg_loss,
                 'accuracy': accuracy,
-            }, 'checkpoint_best.pt')
-            log_print('  ⭐ NEW BEST!', log_file)
+            }, '../model/quran_seq2seq_model.pt')
 
-        # Early stopping if accuracy > 95%
-        if accuracy > 95.0:
+        # Early stopping if accuracy >= 100% (use rounded value to match display)
+        if round(accuracy, 1) >= 100.0:
             msg = f'✓ Early stopping: accuracy reached {accuracy:.1f}%'
             log_print(msg, log_file)
             break
 
-        log_print('', log_file)
+        # Decay LR by 10% if loss increased (minimum 1e-7)
+        current_lr = optimizer.param_groups[0]['lr']
+        if avg_loss > prev_loss and current_lr > 1e-7:
+            new_lr = current_lr * 0.9
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = new_lr
+            log_print(f'  Loss increased! Reducing LR to {new_lr:.1e}', log_file)
+
+        prev_loss = avg_loss
 
         # Step the scheduler
         scheduler.step(avg_loss)
@@ -282,10 +389,6 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
 
 def main():
     log_file = 'log.txt'
-
-    # Clear log file
-    with open(log_file, 'w', encoding='utf-8') as f:
-        f.write('')
 
     log_print('=' * 60, log_file)
     log_print('QURAN SEQ2SEQ TRANSFORMER TRAINING', log_file)
@@ -323,22 +426,45 @@ def main():
     model = QuranSeq2SeqModel(
         vocab_size=vocab_size,
         max_length=50,
-        d_model=256,
-        n_heads=8,
-        n_layers=6,
-        d_ff=1024,
+        d_model=128,
+        n_heads=4,
+        n_layers=4,
+        d_ff=512,
         dropout=0.1
     )
 
     # Try to load existing checkpoint
     import os
     start_epoch = 0
-    if os.path.exists('checkpoint_best.pt'):
+    checkpoint_path = '../model/quran_seq2seq_model.pt'
+    checkpoint_prev_loss = None
+
+    # Backup existing model and log before training
+    import shutil
+    if os.path.exists(checkpoint_path):
+        backup_path = '../model/quran_seq2seq_model_backup.pt'
+        shutil.copy2(checkpoint_path, backup_path)
+        log_print(f'✓ Model backup created: {backup_path}', log_file)
+        log_print('', log_file)
+
         log_print('Loading existing checkpoint to continue training...', log_file)
-        checkpoint = torch.load('checkpoint_best.pt', map_location=device)
-        model.load_state_dict(checkpoint['model'])
-        log_print(f'✓ Checkpoint loaded! Epoch: {checkpoint.get("epoch", "N/A") + 1}, Accuracy: {checkpoint.get("accuracy", "N/A"):.1f}%, Loss: {checkpoint.get("loss", "N/A"):.4f}', log_file)
-        start_epoch = checkpoint.get('epoch', 0) + 1
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+
+        # Handle both old and new checkpoint formats
+        if 'model' in checkpoint:
+            model.load_state_dict(checkpoint['model'])
+        elif 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            # Assume checkpoint is the state dict itself
+            model.load_state_dict(checkpoint)
+
+        epoch_num = checkpoint.get('epoch', -1) + 1 if 'epoch' in checkpoint else 'N/A'
+        accuracy_val = f"{checkpoint.get('accuracy', 0):.1f}%" if 'accuracy' in checkpoint else 'N/A'
+        loss_val = f"{checkpoint.get('loss', 0):.4f}" if 'loss' in checkpoint else 'N/A'
+        log_print(f'✓ Checkpoint loaded! Epoch: {epoch_num}, Accuracy: {accuracy_val}, Loss: {loss_val}', log_file)
+        start_epoch = checkpoint.get('epoch', 0) + 1 if 'epoch' in checkpoint else 0
+        checkpoint_prev_loss = checkpoint.get('loss', None)
     else:
         log_print('No existing checkpoint found, starting from scratch', log_file)
     log_print('', log_file)
@@ -352,19 +478,19 @@ def main():
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss(reduction='none')
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
 
     # Train model
-    log_print('Starting training for up to 100 epochs...', log_file)
+    log_print('Starting training for up to 500 epochs...', log_file)
     log_print(f'Initial Learning Rate: {optimizer.param_groups[0]["lr"]:.1e}', log_file)
     log_print('', log_file)
-    best_accuracy, best_loss = train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=100, log_file=log_file)
+    best_accuracy, best_loss = train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=500, log_file=log_file, prev_loss_init=checkpoint_prev_loss)
 
     log_print('', log_file)
     log_print('=' * 60, log_file)
     log_print(f'✓ TRAINING COMPLETED!', log_file)
-    log_print(f'Best checkpoint saved to: checkpoint_best.pt', log_file)
+    log_print(f'Best checkpoint saved to: ../model/quran_seq2seq_model.pt', log_file)
     log_print(f'FINAL_ACCURACY: {best_accuracy:.1f}%', log_file)
     log_print(f'FINAL_LOSS: {best_loss:.4f}', log_file)
     log_print('=' * 60, log_file)

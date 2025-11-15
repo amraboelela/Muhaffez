@@ -10,6 +10,12 @@ echo ""
 echo "Training in progress... (check $LOG_FILE for details)"
 echo ""
 
+# Backup existing log file before starting
+if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+    cp "$LOG_FILE" "log_backup.txt"
+    echo "✓ Log backup created: log_backup.txt"
+fi
+
 # Run training and capture output
 python3 train.py > "$LOG_FILE" 2>&1
 

@@ -110,3 +110,4 @@ QuranModel provides:
 - Two-page layout mimics physical Mushaf (right pages are odd-numbered)
 - Color feedback: dark green = correct, red = incorrect/unmatched
 - Supports automatic detection of "بسم الله الرحمن الرحيم" and "أعوذ بالله من الشيطان الرجيم"
+- from now on, do not run the train.sh let me do that for you

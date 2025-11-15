@@ -9,28 +9,88 @@ Vocabulary size: 14756
 ✓ Total ayat: 6204
 ✓ Training format: القاريء: [first 10 words] → الاية: [first 5 words]
 
-No existing checkpoint found, starting from scratch
+✓ Model backup created: ../model/quran_seq2seq_model_backup.pt
 
-Total parameters: 12,308,388
+Loading existing checkpoint to continue training...
+✓ Checkpoint loaded! Epoch: 13, Accuracy: 100.0%, Loss: 0.0071
 
-Starting training for up to 100 epochs...
-Initial Learning Rate: 1.0e-04
+Total parameters: 4,591,780
 
-Epoch 1 | Loss=9.6518 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+Starting training for up to 500 epochs...
+Initial Learning Rate: 1.0e-03
 
-Epoch 2 | Loss=9.3640 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+Epoch 1 | Loss=0.8512 | Accuracy=80.2% | LR=1.0e-03 | Time=9s
+  Sample:
+    القاريء: ثم نظر
+    الاية: ثم نظر
+    Predicted: ثم نظر | Match=2/5
+  Loss increased! Reducing LR to 9.0e-04
+Epoch 2 | Loss=0.4626 | Accuracy=99.8% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: والله من ورائهم محيط
+    الاية: والله من ورائهم محيط
+    Predicted: والله من ورائهم محيط | Match=4/5
+Epoch 3 | Loss=0.0498 | Accuracy=99.8% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: فاختلف الاحزاب من بينهم فويل للذين كفروا من مشهد يوم
+    الاية: فاختلف الاحزاب من بينهم فويل
+    Predicted: فاختلف الاحزاب من بينهم فويل | Match=5/5
+Epoch 4 | Loss=0.0169 | Accuracy=99.9% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: اذ قال له ربه اسلم قال اسلمت لرب العالمين
+    الاية: اذ قال له ربه اسلم
+    Predicted: اذ قال له ربه اسلم | Match=5/5
+Epoch 5 | Loss=0.0142 | Accuracy=99.8% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: قل ارايتم ان اهلكني الله ومن معي او رحمنا فمن
+    الاية: قل ارايتم ان اهلكني الله
+    Predicted: قل ارايتم ان اهلكني الله | Match=5/5
+Epoch 6 | Loss=0.0116 | Accuracy=99.8% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: ولله ملك السماوات والارض يغفر لمن يشاء ويعذب من يشاء
+    الاية: ولله ملك السماوات والارض يغفر
+    Predicted: ولله ملك السماوات والارض يغفر | Match=5/5
+Epoch 7 | Loss=0.0121 | Accuracy=99.8% | LR=9.0e-04 | Time=8s
+  Sample:
+    القاريء: ونمارق مصفوفة
+    الاية: ونمارق مصفوفة
+    Predicted: ونمارق مصفوفة | Match=2/5
+  Loss increased! Reducing LR to 8.1e-04
+Epoch 8 | Loss=0.0112 | Accuracy=99.9% | LR=8.1e-04 | Time=9s
+  Sample:
+    القاريء: تبارك الذي ان شاء جعل لك خيرا من ذلك جنات
+    الاية: تبارك الذي ان شاء جعل
+    Predicted: تبارك الذي ان شاء جعل | Match=5/5
+Epoch 9 | Loss=0.0100 | Accuracy=99.8% | LR=8.1e-04 | Time=9s
+  Sample:
+    القاريء: ويوم نبعث من كل امة شهيدا ثم لا يؤذن للذين
+    الاية: ويوم نبعث من كل امة
+    Predicted: ويوم نبعث من كل امة | Match=5/5
+Epoch 10 | Loss=0.0123 | Accuracy=99.8% | LR=8.1e-04 | Time=9s
+  Sample:
+    القاريء: ثم كلا سيعلمون
+    الاية: ثم كلا سيعلمون
+    Predicted: ثم كلا سيعلمون | Match=3/5
+  Loss increased! Reducing LR to 7.3e-04
+Epoch 11 | Loss=0.0108 | Accuracy=99.6% | LR=7.3e-04 | Time=9s
+  Sample:
+    القاريء: والذين يؤذون المؤمنين والمؤمنات بغير ما اكتسبوا فقد احتملوا بهتانا
+    الاية: والذين يؤذون المؤمنين والمؤمنات بغير
+    Predicted: والذين يؤذون المؤمنين والمؤمنات بغير | Match=5/5
+Epoch 12 | Loss=0.0123 | Accuracy=100.0% | LR=7.3e-04 | Time=9s
+  Sample:
+    القاريء: الذي جمع مالا وعدده
+    الاية: الذي جمع مالا وعدده
+    Predicted: الذي جمع مالا وعدده | Match=4/5
+✓ Early stopping: accuracy reached 100.0%
 
-Epoch 3 | Loss=9.1970 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
+✓ Best accuracy: 100.0%
+✓ Best loss: 0.0123
+✓ Total time: 1m 49s
 
-Epoch 4 | Loss=9.0943 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
-Epoch 5 | Loss=9.0131 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
-Epoch 6 | Loss=8.9435 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
-Epoch 7 | Loss=8.8837 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
-Epoch 8 | Loss=8.8318 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
-Epoch 9 | Loss=8.7853 | Accuracy=0.0% | LR=1.0e-04 | Time=10s
-
+============================================================
+✓ TRAINING COMPLETED!
+Best checkpoint saved to: ../model/quran_seq2seq_model.pt
+FINAL_ACCURACY: 100.0%
+FINAL_LOSS: 0.0123
+============================================================
