@@ -64,4 +64,6 @@ fastlane/test_output
 *.pyc
 log*.txt
 *.pt
+*.pth
 log.txt
+

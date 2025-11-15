@@ -85,10 +85,10 @@ class QuranSeq2SeqDataset(Dataset):
         # Tokenize into words
         words = self.tokenize_words(ayah)
 
-        # Get first 10 words for input
+        # Get first N words for input
         input_words = words[:self.max_input_words]
 
-        # Get up to 5 words for output (no padding)
+        # Get up to M words for output (no padding)
         output_words = words[:min(len(words), self.max_output_words)]
 
         # Build sequence: <s> القاريء: [input_words] الاية: [output_words] </s>
@@ -103,22 +103,59 @@ class QuranSeq2SeqDataset(Dataset):
         x = torch.tensor(sequence_tokens, dtype=torch.long)
 
         # Create target: shift by one position for next-token prediction
-        # The last position predicts EOS, which we don't need to supervise
         y = torch.tensor(sequence_tokens[1:] + [self.eos_token], dtype=torch.long)
 
         # Create loss mask: ONLY supervise output tokens (not EOS)
-        # mask[i] = 1 means we supervise predicting y[i] from x[i]
         mask = torch.zeros(len(sequence_tokens), dtype=torch.float)
 
         # Find position of 'الاية:' token
         ayah_pos = sequence_tokens.index(self.ayah_token)
 
         # Supervise from الاية: position for exactly len(output_tokens) positions
-        # - Position ayah_pos (الاية:) → predicts first output word ✓
-        # - Position ayah_pos+1 (first output) → predicts second output word ✓
-        # - ...
-        # - Position ayah_pos+len(output)-1 (last output) → predicts EOS ✓
-        # Do NOT supervise position ayah_pos+len(output) (EOS) → nothing
+        mask[ayah_pos:ayah_pos + len(output_tokens)] = 1.0
+
+        return x, y, mask, output_tokens
+
+
+class QuranSeq2SeqFromJSONDataset(Dataset):
+    """Dataset that loads from pre-generated JSON files (for skip-first variants)"""
+    def __init__(self, json_path, word_to_idx):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            self.data = json.load(f)
+        self.word_to_idx = word_to_idx
+        self.unk_token = word_to_idx.get('<unk>', 0)
+        self.bos_token = word_to_idx.get('<s>', 1)
+        self.reader_token = word_to_idx.get('القاريء:', 3)
+        self.ayah_token = word_to_idx.get('الاية:', 4)
+        self.eos_token = word_to_idx.get('</s>', 2)
+
+    def __len__(self):
+        return len(self.data)
+
+    def words_to_tokens(self, words):
+        tokens = []
+        for word in words:
+            token = self.word_to_idx.get(word, self.unk_token)
+            tokens.append(token)
+        return tokens
+
+    def __getitem__(self, idx):
+        entry = self.data[idx]
+        input_words = entry['input'].split()
+        output_words = entry['output'].split()
+
+        # Build sequence
+        sequence_tokens = [self.bos_token, self.reader_token]
+        sequence_tokens.extend(self.words_to_tokens(input_words))
+        sequence_tokens.append(self.ayah_token)
+        output_tokens = self.words_to_tokens(output_words)
+        sequence_tokens.extend(output_tokens)
+        sequence_tokens.append(self.eos_token)
+
+        x = torch.tensor(sequence_tokens, dtype=torch.long)
+        y = torch.tensor(sequence_tokens[1:] + [self.eos_token], dtype=torch.long)
+        mask = torch.zeros(len(sequence_tokens), dtype=torch.float)
+        ayah_pos = sequence_tokens.index(self.ayah_token)
         mask[ayah_pos:ayah_pos + len(output_tokens)] = 1.0
 
         return x, y, mask, output_tokens
@@ -187,11 +224,12 @@ def calculate_accuracy(model, data_loader, device, idx_to_word):
                 if len(mask_positions) == 0:
                     continue
 
-                # Get predicted tokens in the output section
-                predicted_tokens = predictions[i, mask_positions].cpu().tolist()
-
                 # Get expected tokens
                 expected_tokens = expected_outputs[i]
+                num_expected = len(expected_tokens)
+
+                # Get predicted tokens in the output section (only up to expected length)
+                predicted_tokens = predictions[i, mask_positions[:num_expected]].cpu().tolist()
 
                 # Compare
                 if predicted_tokens == expected_tokens:
@@ -213,65 +251,68 @@ def log_print(message, log_file=None):
 
 def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples=3, log_file=None):
     """Show sample predictions for debugging"""
+    import random
     model.eval()
-    samples_shown = 0
 
     reader_token = 3  # القاريء:
     ayah_token = 4    # الاية:
 
-    with torch.no_grad():
-        for data, target, mask, attention_mask, expected_outputs in data_loader:
-            if samples_shown >= num_samples:
-                break
+    # Randomly select one batch from the data_loader
+    dataset = data_loader.dataset
+    batch_size = data_loader.batch_size
 
-            data = data.to(device)
-            attention_mask = attention_mask.to(device)
+    # Randomly select indices
+    random_indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
+
+    with torch.no_grad():
+        for idx in random_indices:
+            x, y, mask, output_tokens = dataset[idx]
+
+            # Add batch dimension
+            data = x.unsqueeze(0).to(device)
+            attention_mask = torch.ones_like(data).to(device)
+
             logits = model(data, attention_mask=attention_mask)
             predictions = torch.argmax(logits, dim=-1)
 
-            for i in range(data.shape[0]):
-                if samples_shown >= num_samples:
-                    break
+            # Get the full input sequence
+            input_seq = x.tolist()
 
-                # Find where the mask starts
-                mask_positions = torch.where(mask[i] > 0)[0]
-                if len(mask_positions) == 0:
-                    continue
+            # Find positions of special tokens
+            try:
+                reader_pos = input_seq.index(reader_token)
+                ayah_pos = input_seq.index(ayah_token)
+            except ValueError:
+                continue
 
-                # Get the full input sequence
-                input_seq = data[i].cpu().tolist()
+            # Extract input words (between القاريء: and الاية:)
+            input_words_tokens = input_seq[reader_pos+1:ayah_pos]
+            input_words = [idx_to_word.get(token, '<unk>') for token in input_words_tokens]
 
-                # Find positions of special tokens
-                try:
-                    reader_pos = input_seq.index(reader_token)
-                    ayah_pos = input_seq.index(ayah_token)
-                except ValueError:
-                    continue
+            # Find where the mask starts
+            mask_positions = torch.where(mask > 0)[0]
+            if len(mask_positions) == 0:
+                continue
 
-                # Extract input words (between القاريء: and الاية:)
-                input_words_tokens = input_seq[reader_pos+1:ayah_pos]
-                input_words = [idx_to_word.get(token, '<unk>') for token in input_words_tokens]
+            expected_tokens = output_tokens
+            num_expected = len(expected_tokens)
 
-                # Get predicted tokens using straight argmax
-                predicted_tokens = []
-                for pos in enumerate(mask_positions[:5]):  # Only look at first 5 positions
-                    predicted_tokens.append(predictions[i, pos[1]].item())
+            # Get predicted tokens using straight argmax (only for expected length)
+            predicted_tokens = []
+            for pos in mask_positions[:num_expected]:
+                predicted_tokens.append(predictions[0, pos].item())
 
-                expected_tokens = expected_outputs[i]
+            # Convert to words
+            predicted_words = [idx_to_word.get(token, '<unk>') for token in predicted_tokens]
+            expected_words = [idx_to_word.get(token, '<unk>') for token in expected_tokens]
 
-                # Convert to words
-                predicted_words = [idx_to_word.get(token, '<unk>') for token in predicted_tokens[:5]]
-                expected_words = [idx_to_word.get(token, '<unk>') for token in expected_tokens[:5]]
+            # Count matches
+            matches = sum(1 for p, e in zip(predicted_tokens, expected_tokens) if p == e)
 
-                # Count matches
-                matches = sum(1 for p, e in zip(predicted_tokens[:5], expected_tokens[:5]) if p == e)
-
-                log_print(f'  Sample:', log_file)
-                log_print(f'    القاريء: {" ".join(input_words)}', log_file)
-                log_print(f'    الاية: {" ".join(expected_words)}', log_file)
-                log_print(f'    Predicted: {" ".join(predicted_words)} | Match={matches}/5', log_file)
-
-                samples_shown += 1
+            log_print(f'  Sample:', log_file)
+            log_print(f'    القاريء: {" ".join(input_words)}', log_file)
+            log_print(f'    الاية: {" ".join(expected_words)}', log_file)
+            log_print(f'    Predicted: {" ".join(predicted_words)} | Match={matches}/{num_expected}', log_file)
 
     model.train()
 
@@ -415,18 +456,30 @@ def main():
     # Load Quran data
     ayat = load_quran_data('../../../Muhaffez/quran-simple-min.txt')
     log_print(f'✓ Total ayat: {len(ayat)}', log_file)
-    log_print(f'✓ Training format: Combined 10→3 input words → 5 output words', log_file)
+    log_print(f'✓ Training format: Combined datasets (10→3 words + skip-first variants)', log_file)
     log_print('', log_file)
 
-    # Combine all input word lengths (10 down to 3) into one dataset
+    # Combine all datasets into one huge dataset
     from torch.utils.data import ConcatDataset
     datasets = []
+
+    # Original datasets: 10 down to 3 input words
     for input_words in range(10, 2, -1):  # 10 down to 3
         dataset = QuranSeq2SeqDataset(ayat, word_to_idx, max_input_words=input_words, max_output_words=5)
         datasets.append(dataset)
         log_print(f'  Dataset {input_words}to5: {len(dataset)} samples', log_file)
 
+    # Skip-first datasets: load from JSON files (10 down to 5)
+    log_print('', log_file)
+    log_print('  Skip-first datasets:', log_file)
+    for input_words in range(10, 4, -1):  # 10 down to 5
+        json_path = f'../datasets/dataset_{input_words}_to_5_1.json'
+        dataset = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+        datasets.append(dataset)
+        log_print(f'  Dataset {input_words}to5_skip1: {len(dataset)} samples', log_file)
+
     combined_dataset = ConcatDataset(datasets)
+    log_print('', log_file)
     log_print(f'✓ Combined dataset: {len(combined_dataset)} total samples', log_file)
     log_print('', log_file)
 

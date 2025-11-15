@@ -68,7 +68,7 @@ class TransformerBlock(nn.Module):
 
 class QuranSeq2SeqModel(nn.Module):
     """Decoder-only transformer for sequence-to-sequence generation"""
-    def __init__(self, vocab_size, max_length=50, d_model=256, n_heads=8, n_layers=6, d_ff=1024, dropout=0.1):
+    def __init__(self, vocab_size, max_length=50, d_model=128, n_heads=4, n_layers=4, d_ff=512, dropout=0.1):
         super(QuranSeq2SeqModel, self).__init__()
 
         self.vocab_size = vocab_size
