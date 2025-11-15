@@ -277,7 +277,7 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
 
 
 
-def train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None, prev_loss_init=None):
+def train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None, prev_loss_init=None, checkpoint_path='../model/quran_seq2seq_model.pt'):
     """Train the seq2seq model"""
     model.train()
 
@@ -355,7 +355,7 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
                 'vocab_size': model.vocab_size,
                 'loss': avg_loss,
                 'accuracy': accuracy,
-            }, '../model/quran_seq2seq_model.pt')
+            }, checkpoint_path)
 
         # Early stopping if accuracy >= 100% (use rounded value to match display)
         if round(accuracy, 1) >= 100.0:
@@ -391,7 +391,7 @@ def main():
     log_file = 'log.txt'
 
     log_print('=' * 60, log_file)
-    log_print('QURAN SEQ2SEQ TRANSFORMER TRAINING', log_file)
+    log_print('QURAN SEQ2SEQ TRANSFORMER - COMBINED 10→3 WORDS', log_file)
     log_print('=' * 60, log_file)
     log_print('', log_file)
 
@@ -415,12 +415,22 @@ def main():
     # Load Quran data
     ayat = load_quran_data('../../../Muhaffez/quran-simple-min.txt')
     log_print(f'✓ Total ayat: {len(ayat)}', log_file)
-    log_print(f'✓ Training format: القاريء: [first 10 words] → الاية: [first 5 words]', log_file)
+    log_print(f'✓ Training format: Combined 10→3 input words → 5 output words', log_file)
     log_print('', log_file)
 
-    # Create dataset
-    dataset = QuranSeq2SeqDataset(ayat, word_to_idx, max_input_words=10, max_output_words=5)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=True, collate_fn=collate_fn, num_workers=0)
+    # Combine all input word lengths (10 down to 3) into one dataset
+    from torch.utils.data import ConcatDataset
+    datasets = []
+    for input_words in range(10, 2, -1):  # 10 down to 3
+        dataset = QuranSeq2SeqDataset(ayat, word_to_idx, max_input_words=input_words, max_output_words=5)
+        datasets.append(dataset)
+        log_print(f'  Dataset {input_words}to5: {len(dataset)} samples', log_file)
+
+    combined_dataset = ConcatDataset(datasets)
+    log_print(f'✓ Combined dataset: {len(combined_dataset)} total samples', log_file)
+    log_print('', log_file)
+
+    train_loader = DataLoader(combined_dataset, batch_size=32, collate_fn=collate_fn, num_workers=0)
 
     # Create model
     model = QuranSeq2SeqModel(
@@ -485,12 +495,12 @@ def main():
     log_print('Starting training for up to 500 epochs...', log_file)
     log_print(f'Initial Learning Rate: {optimizer.param_groups[0]["lr"]:.1e}', log_file)
     log_print('', log_file)
-    best_accuracy, best_loss = train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=500, log_file=log_file, prev_loss_init=checkpoint_prev_loss)
+    best_accuracy, best_loss = train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=500, log_file=log_file, prev_loss_init=checkpoint_prev_loss, checkpoint_path=checkpoint_path)
 
     log_print('', log_file)
     log_print('=' * 60, log_file)
     log_print(f'✓ TRAINING COMPLETED!', log_file)
-    log_print(f'Best checkpoint saved to: ../model/quran_seq2seq_model.pt', log_file)
+    log_print(f'Best checkpoint saved to: {checkpoint_path}', log_file)
     log_print(f'FINAL_ACCURACY: {best_accuracy:.1f}%', log_file)
     log_print(f'FINAL_LOSS: {best_loss:.4f}', log_file)
     log_print('=' * 60, log_file)

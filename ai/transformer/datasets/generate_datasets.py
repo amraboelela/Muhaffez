@@ -49,8 +49,8 @@ def main():
 
     output_words = 5
 
-    # Generate datasets for input words from 9 down to 3
-    for input_words in range(9, 2, -1):
+    # Generate datasets for input words from 10 down to 3
+    for input_words in range(10, 2, -1):
         print(f"Generating dataset_{input_words}_to_{output_words}.json...")
 
         dataset = generate_dataset(input_words, output_words)
