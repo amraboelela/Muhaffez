@@ -306,6 +306,16 @@ def test_model(model_path, vocab_path, quran_path, log_file=None):
         log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
         log_print('', log_file, log_only=True)
 
+    # Test replace third word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (wrong 3rd)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words, test_count=100, log_file=log_file, replace_position=2, vocab_words=vocab_words)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
+
     # Summary
     log_print('=' * 60, log_file)
     log_print('SUMMARY', log_file)

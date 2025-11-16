@@ -289,6 +289,22 @@ def main():
 
         print(f"  ✓ Created {output_file} with {len(dataset)} entries")
 
+    # Generate datasets with third word replaced (from 6 down to 4)
+    # For dataset_N_to_6_x3.json: replace 3rd word with random wrong word
+    # If ayah has ≤3 words, use original words instead
+    print("\nGenerating datasets with third word replaced...")
+    for input_words in range(6, 3, -1):  # 6 down to 4
+        print(f"Generating dataset_{input_words}_to_{output_words}_x3.json...")
+
+        # Replace 3rd word (position 2)
+        dataset = generate_dataset_replace_position(input_words, output_words, replace_position=2, vocab_words=vocab_words)
+
+        output_file = f"dataset_{input_words}_to_{output_words}_x3.json"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(dataset, f, ensure_ascii=False, indent=2)
+
+        print(f"  ✓ Created {output_file} with {len(dataset)} entries")
+
     print("\nAll datasets generated successfully!")
 
 if __name__ == "__main__":

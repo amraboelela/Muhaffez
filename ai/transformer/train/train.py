@@ -330,8 +330,8 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
                 'accuracy': accuracy,
             }, checkpoint_path)
 
-        # Early stopping if accuracy >= 99% (use rounded value to match display)
-        if round(accuracy, 1) >= 99.0:
+        # Early stopping if accuracy >= 97% (use rounded value to match display)
+        if round(accuracy, 1) >= 97.0:
             msg = f'✓ Early stopping: accuracy reached {accuracy:.1f}%'
             log_print(msg, log_file)
             break
@@ -454,6 +454,14 @@ def main():
                 dataset_replacex2 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
                 datasets.append(dataset_replacex2)
                 log_print(f'  Dataset {input_words}to6_x2: {len(dataset_replacex2)} samples', log_file)
+
+        # Replace-third dataset: Nto6_x3 (for 4-6)
+        if input_words >= 4:
+            json_path = f'../datasets/dataset_{input_words}_to_6_x3.json'
+            if os.path.exists(json_path):
+                dataset_replacex3 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_replacex3)
+                log_print(f'  Dataset {input_words}to6_x3: {len(dataset_replacex3)} samples', log_file)
 
     # Use random sampling dataset
     combined_dataset = RandomSamplingDataset(datasets)
