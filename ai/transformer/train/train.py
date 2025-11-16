@@ -17,117 +17,16 @@ def load_dataset_from_json(json_path):
     return dataset
 
 
-def normalize_arabic(text):
-    """Normalize Arabic text - remove tashkeel and normalize hamza variants"""
-    # Arabic diacritics
-    arabic_diacritics = set([
-        '\u064B', '\u064C', '\u064D', '\u064E', '\u064F',
-        '\u0650', '\u0651', '\u0652', '\u0653', '\u0654',
-        '\u0655', '\u0656', '\u0657', '\u0658', '\u0670',
-    ])
-
-    text = ''.join(c for c in text if c not in arabic_diacritics)
-
-    # Normalize hamza variants (keep ؤ and ئ as is, only normalize alif variants)
-    # Note: We keep ئ (yeh with hamza) and ؤ (waw with hamza) as is
-    # because they represent distinct sounds
-    hamza_map = {
-        'إ': 'ا',  # alif with hamza below
-        'أ': 'ا',  # alif with hamza above
-        'آ': 'ا',  # alif with madda
-        # 'ؤ': 'و' - NOT normalized, kept as is
-        # 'ئ': 'ي' - NOT normalized, kept as is
-    }
-
-    for old, new in hamza_map.items():
-        text = text.replace(old, new)
-
-    return text
-
-
-class QuranSeq2SeqDataset(Dataset):
-    """
-    Dataset for training seq2seq model
-    Input format: القاريء: [first 10 words] الاية: [first 5 words]
-    During training, we supervise only the tokens after 'الاية:'
-    """
-    def __init__(self, ayat_list, word_to_idx, max_input_words=10, max_output_words=5):
-        self.ayat = ayat_list
-        self.word_to_idx = word_to_idx
-        self.max_input_words = max_input_words
-        self.max_output_words = max_output_words
-        self.unk_token = word_to_idx.get('<unk>', 0)
-        self.bos_token = word_to_idx.get('<s>', 1)
-        self.reader_token = word_to_idx.get('القاريء:', 3)
-        self.ayah_token = word_to_idx.get('الاية:', 4)
-        self.eos_token = word_to_idx.get('</s>', 2)
-
-    def __len__(self):
-        return len(self.ayat)
-
-    def tokenize_words(self, text):
-        """Tokenize Arabic text into words"""
-        normalized = normalize_arabic(text)
-        words = normalized.split()
-        return words
-
-    def words_to_tokens(self, words):
-        """Convert words to token indices"""
-        tokens = []
-        for word in words:
-            token = self.word_to_idx.get(word, self.unk_token)
-            tokens.append(token)
-        return tokens
-
-    def __getitem__(self, idx):
-        ayah = self.ayat[idx]
-
-        # Tokenize into words
-        words = self.tokenize_words(ayah)
-
-        # Get first N words for input
-        input_words = words[:self.max_input_words]
-
-        # Get up to M words for output (no padding)
-        output_words = words[:min(len(words), self.max_output_words)]
-
-        # Build sequence: <s> القاريء: [input_words] الاية: [output_words] </s>
-        sequence_tokens = [self.bos_token, self.reader_token]
-        sequence_tokens.extend(self.words_to_tokens(input_words))
-        sequence_tokens.append(self.ayah_token)
-        output_tokens = self.words_to_tokens(output_words)
-        sequence_tokens.extend(output_tokens)
-        sequence_tokens.append(self.eos_token)
-
-        # Convert to tensor
-        x = torch.tensor(sequence_tokens, dtype=torch.long)
-
-        # Create target: shift by one position for next-token prediction
-        y = torch.tensor(sequence_tokens[1:] + [self.eos_token], dtype=torch.long)
-
-        # Create loss mask: ONLY supervise output tokens (not EOS)
-        mask = torch.zeros(len(sequence_tokens), dtype=torch.float)
-
-        # Find position of 'الاية:' token
-        ayah_pos = sequence_tokens.index(self.ayah_token)
-
-        # Supervise from الاية: position for exactly len(output_tokens) positions
-        mask[ayah_pos:ayah_pos + len(output_tokens)] = 1.0
-
-        return x, y, mask, output_tokens
-
-
 class QuranSeq2SeqFromJSONDataset(Dataset):
     """Dataset that loads from pre-generated JSON files (for skip-first variants)"""
     def __init__(self, json_path, word_to_idx):
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
         self.word_to_idx = word_to_idx
-        self.unk_token = word_to_idx.get('<unk>', 0)
-        self.bos_token = word_to_idx.get('<s>', 1)
-        self.reader_token = word_to_idx.get('القاريء:', 3)
-        self.ayah_token = word_to_idx.get('الاية:', 4)
-        self.eos_token = word_to_idx.get('</s>', 2)
+        self.bos_token = word_to_idx['<s>']
+        self.eos_token = word_to_idx['</s>']
+        self.reader_token = word_to_idx['القاريء:']
+        self.ayah_token = word_to_idx['الاية:']
 
     def __len__(self):
         return len(self.data)
@@ -135,7 +34,7 @@ class QuranSeq2SeqFromJSONDataset(Dataset):
     def words_to_tokens(self, words):
         tokens = []
         for word in words:
-            token = self.word_to_idx.get(word, self.unk_token)
+            token = self.word_to_idx[word]
             tokens.append(token)
         return tokens
 
@@ -161,13 +60,37 @@ class QuranSeq2SeqFromJSONDataset(Dataset):
         return x, y, mask, output_tokens
 
 
+class RoundRobinDataset(Dataset):
+    """Interleaves samples from multiple datasets in round-robin fashion"""
+    def __init__(self, datasets):
+        self.datasets = datasets
+        self.max_len = max(len(d) for d in datasets)
+
+    def __len__(self):
+        # Total samples across all datasets
+        return sum(len(d) for d in self.datasets)
+
+    def __getitem__(self, idx):
+        # Calculate which round and which dataset
+        num_datasets = len(self.datasets)
+        round_num = idx // num_datasets
+        dataset_idx = idx % num_datasets
+
+        # Get the sample from the appropriate dataset
+        # If this dataset is exhausted, wrap around
+        dataset = self.datasets[dataset_idx]
+        sample_idx = round_num % len(dataset)
+
+        return dataset[sample_idx]
+
+
 def collate_fn(batch):
     """Custom collate function to handle variable-length sequences"""
     xs, ys, masks, outputs = zip(*batch)
 
     # Find max length in batch
     max_len = max(len(x) for x in xs)
-    pad_token = 0  # <unk> - will be masked by attention_mask
+    pad_token = 0  # Padding token (will be masked by attention_mask)
     ignore_index = -100  # Standard ignore value for CrossEntropyLoss
 
     # Pad sequences
@@ -178,7 +101,7 @@ def collate_fn(batch):
 
     for x, y, mask in zip(xs, ys, masks):
         pad_len = max_len - len(x)
-        # Pad inputs with <unk> (will be masked)
+        # Pad inputs (will be masked by attention mask)
         padded_x = torch.cat([x, torch.full((pad_len,), pad_token, dtype=torch.long)])
         # Pad targets with -100 (ignored by CrossEntropyLoss)
         padded_y = torch.cat([y, torch.full((pad_len,), ignore_index, dtype=torch.long)])
@@ -254,8 +177,8 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
     import random
     model.eval()
 
-    reader_token = 3  # القاريء:
-    ayah_token = 4    # الاية:
+    reader_token = 2  # القاريء:
+    ayah_token = 3    # الاية:
 
     # Randomly select one batch from the data_loader
     dataset = data_loader.dataset
@@ -287,7 +210,7 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
 
             # Extract input words (between القاريء: and الاية:)
             input_words_tokens = input_seq[reader_pos+1:ayah_pos]
-            input_words = [idx_to_word.get(token, '<unk>') for token in input_words_tokens]
+            input_words = [idx_to_word[token] for token in input_words_tokens]
 
             # Find where the mask starts
             mask_positions = torch.where(mask > 0)[0]
@@ -303,8 +226,8 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
                 predicted_tokens.append(predictions[0, pos].item())
 
             # Convert to words
-            predicted_words = [idx_to_word.get(token, '<unk>') for token in predicted_tokens]
-            expected_words = [idx_to_word.get(token, '<unk>') for token in expected_tokens]
+            predicted_words = [idx_to_word[token] for token in predicted_tokens]
+            expected_words = [idx_to_word[token] for token in expected_tokens]
 
             # Count matches
             matches = sum(1 for p, e in zip(predicted_tokens, expected_tokens) if p == e)
@@ -453,34 +376,41 @@ def main():
     word_to_idx, idx_to_word, vocab_size = load_vocabulary('../model/vocabulary.json')
     log_print(f'Vocabulary size: {vocab_size}', log_file)
 
-    # Load Quran data
-    ayat = load_quran_data('../../../Muhaffez/quran-simple-min.txt')
-    log_print(f'✓ Total ayat: {len(ayat)}', log_file)
-    log_print(f'✓ Training format: Combined datasets (10→3 words + skip-first variants)', log_file)
+    log_print(f'✓ Training format: Round-robin interleaved datasets (3→10 words)', log_file)
     log_print('', log_file)
 
-    # Combine all datasets into one huge dataset
-    from torch.utils.data import ConcatDataset
+    # Create datasets in alphabetical order for round-robin interleaving
     datasets = []
 
-    # Original datasets: 10 down to 3 input words
-    for input_words in range(10, 2, -1):  # 10 down to 3
-        dataset = QuranSeq2SeqDataset(ayat, word_to_idx, max_input_words=input_words, max_output_words=5)
-        datasets.append(dataset)
-        log_print(f'  Dataset {input_words}to5: {len(dataset)} samples', log_file)
+    # For each input word count (3 to 10), add regular and skip variants
+    for input_words in range(3, 11):  # 3 to 10
+        # Regular dataset: Nto5 (load from JSON)
+        json_path = f'../datasets/dataset_{input_words}_to_5.json'
+        if os.path.exists(json_path):
+            dataset = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+            datasets.append(dataset)
+            log_print(f'  Dataset {input_words}to5: {len(dataset)} samples', log_file)
 
-    # Skip-first datasets: load from JSON files (10 down to 5)
-    log_print('', log_file)
-    log_print('  Skip-first datasets:', log_file)
-    for input_words in range(10, 4, -1):  # 10 down to 5
-        json_path = f'../datasets/dataset_{input_words}_to_5_1.json'
-        dataset = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
-        datasets.append(dataset)
-        log_print(f'  Dataset {input_words}to5_skip1: {len(dataset)} samples', log_file)
+        # Skip-first dataset: Nto5_1 (only for 4-10)
+        if input_words >= 4:
+            json_path = f'../datasets/dataset_{input_words}_to_5_1.json'
+            if os.path.exists(json_path):
+                dataset_skip = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_skip)
+                log_print(f'  Dataset {input_words}to5_1: {len(dataset_skip)} samples', log_file)
 
-    combined_dataset = ConcatDataset(datasets)
+        # Skip-second dataset: Nto5_2 (only for 4-10)
+        if input_words >= 4:
+            json_path = f'../datasets/dataset_{input_words}_to_5_2.json'
+            if os.path.exists(json_path):
+                dataset_skip2 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_skip2)
+                log_print(f'  Dataset {input_words}to5_2: {len(dataset_skip2)} samples', log_file)
+
+    # Use round-robin dataset
+    combined_dataset = RoundRobinDataset(datasets)
     log_print('', log_file)
-    log_print(f'✓ Combined dataset: {len(combined_dataset)} total samples', log_file)
+    log_print(f'✓ Round-robin dataset: {len(combined_dataset)} total samples from {len(datasets)} datasets', log_file)
     log_print('', log_file)
 
     train_loader = DataLoader(combined_dataset, batch_size=32, collate_fn=collate_fn, num_workers=0)
@@ -497,7 +427,6 @@ def main():
     )
 
     # Try to load existing checkpoint
-    import os
     start_epoch = 0
     checkpoint_path = '../model/quran_seq2seq_model.pt'
     checkpoint_prev_loss = None
