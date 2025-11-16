@@ -382,46 +382,61 @@ def main():
     # Create datasets in alphabetical order for round-robin interleaving
     datasets = []
 
-    # For each input word count (3 to 5), add regular and skip variants
-    for input_words in range(3, 6):  # 3 to 5
-        # Regular dataset: Nto5 (load from JSON)
-        json_path = f'../datasets/dataset_{input_words}_to_5.json'
+    # For each input word count (3 to 6), add regular and skip variants
+    for input_words in range(3, 7):  # 3 to 6
+        # Regular dataset: Nto6 (load from JSON)
+        json_path = f'../datasets/dataset_{input_words}_to_6.json'
         if os.path.exists(json_path):
             dataset = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
             datasets.append(dataset)
-            log_print(f'  Dataset {input_words}to5: {len(dataset)} samples', log_file)
+            log_print(f'  Dataset {input_words}to6: {len(dataset)} samples', log_file)
 
-        # Skip-first dataset: Nto5_1 (only for 4-5)
+        # Skip-first dataset: Nto6_1 (only for 4-6)
         if input_words >= 4:
-            json_path = f'../datasets/dataset_{input_words}_to_5_1.json'
+            json_path = f'../datasets/dataset_{input_words}_to_6_1.json'
             if os.path.exists(json_path):
                 dataset_skip = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
                 datasets.append(dataset_skip)
-                log_print(f'  Dataset {input_words}to5_1: {len(dataset_skip)} samples', log_file)
+                log_print(f'  Dataset {input_words}to6_1: {len(dataset_skip)} samples', log_file)
 
-        # Skip-second dataset: Nto5_2 (only for 4-5)
+        # Skip-second dataset: Nto6_2 (only for 4-6)
         if input_words >= 4:
-            json_path = f'../datasets/dataset_{input_words}_to_5_2.json'
+            json_path = f'../datasets/dataset_{input_words}_to_6_2.json'
             if os.path.exists(json_path):
                 dataset_skip2 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
                 datasets.append(dataset_skip2)
-                log_print(f'  Dataset {input_words}to5_2: {len(dataset_skip2)} samples', log_file)
+                log_print(f'  Dataset {input_words}to6_2: {len(dataset_skip2)} samples', log_file)
 
-        # Skip-third dataset: Nto5_3 (only for 4-5)
+        # Skip-third dataset: Nto6_3 (only for 4-6)
         if input_words >= 4:
-            json_path = f'../datasets/dataset_{input_words}_to_5_3.json'
+            json_path = f'../datasets/dataset_{input_words}_to_6_3.json'
             if os.path.exists(json_path):
                 dataset_skip3 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
                 datasets.append(dataset_skip3)
-                log_print(f'  Dataset {input_words}to5_3: {len(dataset_skip3)} samples', log_file)
+                log_print(f'  Dataset {input_words}to6_3: {len(dataset_skip3)} samples', log_file)
 
-        # Skip-fourth dataset: Nto5_4 (only for 5)
+        # Skip-fourth dataset: Nto6_4 (only for 5-6)
         if input_words >= 5:
-            json_path = f'../datasets/dataset_{input_words}_to_5_4.json'
+            json_path = f'../datasets/dataset_{input_words}_to_6_4.json'
             if os.path.exists(json_path):
                 dataset_skip4 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
                 datasets.append(dataset_skip4)
-                log_print(f'  Dataset {input_words}to5_4: {len(dataset_skip4)} samples', log_file)
+                log_print(f'  Dataset {input_words}to6_4: {len(dataset_skip4)} samples', log_file)
+
+        # Skip-fifth dataset: Nto6_5 (only for 6)
+        if input_words >= 6:
+            json_path = f'../datasets/dataset_{input_words}_to_6_5.json'
+            if os.path.exists(json_path):
+                dataset_skip5 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_skip5)
+                log_print(f'  Dataset {input_words}to6_5: {len(dataset_skip5)} samples', log_file)
+
+        # Replace-first dataset: Nto6_x1 (for 3-6)
+        json_path = f'../datasets/dataset_{input_words}_to_6_x1.json'
+        if os.path.exists(json_path):
+            dataset_replacex1 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+            datasets.append(dataset_replacex1)
+            log_print(f'  Dataset {input_words}to6_x1: {len(dataset_replacex1)} samples', log_file)
 
     # Use round-robin dataset
     combined_dataset = RoundRobinDataset(datasets)
