@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import sys
 import os
+import random
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 from seq2seq_model import QuranSeq2SeqModel, load_vocabulary, load_quran_data
 import time
@@ -60,28 +61,27 @@ class QuranSeq2SeqFromJSONDataset(Dataset):
         return x, y, mask, output_tokens
 
 
-class RoundRobinDataset(Dataset):
-    """Interleaves samples from multiple datasets in round-robin fashion"""
+class RandomSamplingDataset(Dataset):
+    """Randomly samples from multiple datasets until all samples are used once per epoch"""
     def __init__(self, datasets):
         self.datasets = datasets
-        self.max_len = max(len(d) for d in datasets)
+        # Create a list of (dataset_idx, sample_idx) tuples for all samples
+        self.all_samples = []
+        for dataset_idx, dataset in enumerate(datasets):
+            for sample_idx in range(len(dataset)):
+                self.all_samples.append((dataset_idx, sample_idx))
+
+        # Shuffle the samples
+        random.shuffle(self.all_samples)
 
     def __len__(self):
         # Total samples across all datasets
-        return sum(len(d) for d in self.datasets)
+        return len(self.all_samples)
 
     def __getitem__(self, idx):
-        # Calculate which round and which dataset
-        num_datasets = len(self.datasets)
-        round_num = idx // num_datasets
-        dataset_idx = idx % num_datasets
-
-        # Get the sample from the appropriate dataset
-        # If this dataset is exhausted, wrap around
-        dataset = self.datasets[dataset_idx]
-        sample_idx = round_num % len(dataset)
-
-        return dataset[sample_idx]
+        # Get the dataset and sample index from the shuffled list
+        dataset_idx, sample_idx = self.all_samples[idx]
+        return self.datasets[dataset_idx][sample_idx]
 
 
 def collate_fn(batch):
@@ -376,10 +376,10 @@ def main():
     word_to_idx, idx_to_word, vocab_size = load_vocabulary('../model/vocabulary.json')
     log_print(f'Vocabulary size: {vocab_size}', log_file)
 
-    log_print(f'✓ Training format: Round-robin interleaved datasets (3→5 words)', log_file)
+    log_print(f'✓ Training format: Random sampling from datasets (3→6 words)', log_file)
     log_print('', log_file)
 
-    # Create datasets in alphabetical order for round-robin interleaving
+    # Load existing datasets and randomly sample from all of them
     datasets = []
 
     # For each input word count (3 to 6), add regular and skip variants
@@ -438,10 +438,10 @@ def main():
             datasets.append(dataset_replacex1)
             log_print(f'  Dataset {input_words}to6_x1: {len(dataset_replacex1)} samples', log_file)
 
-    # Use round-robin dataset
-    combined_dataset = RoundRobinDataset(datasets)
+    # Use random sampling dataset
+    combined_dataset = RandomSamplingDataset(datasets)
     log_print('', log_file)
-    log_print(f'✓ Round-robin dataset: {len(combined_dataset)} total samples from {len(datasets)} datasets', log_file)
+    log_print(f'✓ Random sampling dataset: {len(combined_dataset)} total samples from {len(datasets)} datasets', log_file)
     log_print('', log_file)
 
     train_loader = DataLoader(combined_dataset, batch_size=32, collate_fn=collate_fn, num_workers=0)
