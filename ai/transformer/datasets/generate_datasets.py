@@ -107,8 +107,8 @@ def main():
 
     output_words = 5
 
-    # Generate datasets for input words from 10 down to 3
-    for input_words in range(10, 2, -1):
+    # Generate datasets for input words from 5 down to 3
+    for input_words in range(5, 2, -1):
         print(f"Generating dataset_{input_words}_to_{output_words}.json...")
 
         dataset = generate_dataset(input_words, output_words)
@@ -119,11 +119,11 @@ def main():
 
         print(f"  ✓ Created {output_file} with {len(dataset)} entries")
 
-    # Generate datasets with first word skipped (from 10 down to 4)
+    # Generate datasets with first word skipped (from 5 down to 4)
     # For dataset_N_to_5_1.json: take (N-1) words starting from position 1
     # If result has ≤3 words, use original words instead
     print("\nGenerating datasets with first word skipped...")
-    for input_words in range(10, 3, -1):  # 10 down to 4
+    for input_words in range(5, 3, -1):  # 5 down to 4
         print(f"Generating dataset_{input_words}_to_{output_words}_1.json...")
 
         # Take (input_words - 1) words, starting from position 1 (skip first)
@@ -135,17 +135,49 @@ def main():
 
         print(f"  ✓ Created {output_file} with {len(dataset)} entries")
 
-    # Generate datasets with second word skipped (from 10 down to 4)
+    # Generate datasets with second word skipped (from 5 down to 4)
     # For dataset_N_to_5_2.json: take (N-1) words, skipping position 1 (2nd word)
     # If ayah has ≤3 words, use original words instead
     print("\nGenerating datasets with second word skipped...")
-    for input_words in range(10, 3, -1):  # 10 down to 4
+    for input_words in range(5, 3, -1):  # 5 down to 4
         print(f"Generating dataset_{input_words}_to_{output_words}_2.json...")
 
         # Take (input_words - 1) words, skipping position 1 (skip 2nd word)
         dataset = generate_dataset_skip_position(input_words - 1, output_words, skip_position=1)
 
         output_file = f"dataset_{input_words}_to_{output_words}_2.json"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(dataset, f, ensure_ascii=False, indent=2)
+
+        print(f"  ✓ Created {output_file} with {len(dataset)} entries")
+
+    # Generate datasets with third word skipped (from 5 down to 4)
+    # For dataset_N_to_5_3.json: take (N-1) words, skipping position 2 (3rd word)
+    # If ayah has ≤3 words, use original words instead
+    print("\nGenerating datasets with third word skipped...")
+    for input_words in range(5, 3, -1):  # 5 down to 4
+        print(f"Generating dataset_{input_words}_to_{output_words}_3.json...")
+
+        # Take (input_words - 1) words, skipping position 2 (skip 3rd word)
+        dataset = generate_dataset_skip_position(input_words - 1, output_words, skip_position=2)
+
+        output_file = f"dataset_{input_words}_to_{output_words}_3.json"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(dataset, f, ensure_ascii=False, indent=2)
+
+        print(f"  ✓ Created {output_file} with {len(dataset)} entries")
+
+    # Generate datasets with fourth word skipped (only for 5)
+    # For dataset_N_to_5_4.json: take (N-1) words, skipping position 3 (4th word)
+    # If ayah has ≤3 words, use original words instead
+    print("\nGenerating datasets with fourth word skipped...")
+    for input_words in range(5, 4, -1):  # only 5
+        print(f"Generating dataset_{input_words}_to_{output_words}_4.json...")
+
+        # Take (input_words - 1) words, skipping position 3 (skip 4th word)
+        dataset = generate_dataset_skip_position(input_words - 1, output_words, skip_position=3)
+
+        output_file = f"dataset_{input_words}_to_{output_words}_4.json"
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(dataset, f, ensure_ascii=False, indent=2)
 
