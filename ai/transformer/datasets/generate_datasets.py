@@ -257,17 +257,33 @@ def main():
 
         print(f"  ✓ Created {output_file} with {len(dataset)} entries")
 
-    # Generate datasets with first word replaced (from 6 down to 3)
+    # Generate datasets with first word replaced (from 6 down to 4)
     # For dataset_N_to_6_x1.json: replace 1st word with random wrong word
     # If ayah has ≤3 words, use original words instead
     print("\nGenerating datasets with first word replaced...")
-    for input_words in range(6, 2, -1):  # 6 down to 3
+    for input_words in range(6, 3, -1):  # 6 down to 4
         print(f"Generating dataset_{input_words}_to_{output_words}_x1.json...")
 
         # Replace 1st word (position 0)
         dataset = generate_dataset_replace_position(input_words, output_words, replace_position=0, vocab_words=vocab_words)
 
         output_file = f"dataset_{input_words}_to_{output_words}_x1.json"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(dataset, f, ensure_ascii=False, indent=2)
+
+        print(f"  ✓ Created {output_file} with {len(dataset)} entries")
+
+    # Generate datasets with second word replaced (from 6 down to 4)
+    # For dataset_N_to_6_x2.json: replace 2nd word with random wrong word
+    # If ayah has ≤3 words, use original words instead
+    print("\nGenerating datasets with second word replaced...")
+    for input_words in range(6, 3, -1):  # 6 down to 4
+        print(f"Generating dataset_{input_words}_to_{output_words}_x2.json...")
+
+        # Replace 2nd word (position 1)
+        dataset = generate_dataset_replace_position(input_words, output_words, replace_position=1, vocab_words=vocab_words)
+
+        output_file = f"dataset_{input_words}_to_{output_words}_x2.json"
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(dataset, f, ensure_ascii=False, indent=2)
 

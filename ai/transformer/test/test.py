@@ -1,141 +1,369 @@
+#!/usr/bin/env python3
+"""
+Test the trained Quran Seq2Seq model with different input/output combinations
+"""
 import torch
 import sys
 import os
+import random
+import shutil
 
-# Add train directory to path to import seq2seq_model
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../train'))
+# Add parent directories to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 
 from seq2seq_model import QuranSeq2SeqModel, load_vocabulary, load_quran_data
 
 
-def normalize_arabic(text):
-    """Normalize Arabic text - remove tashkeel and normalize hamza variants"""
-    arabic_diacritics = set([
-        '\u064B', '\u064C', '\u064D', '\u064E', '\u064F',
-        '\u0650', '\u0651', '\u0652', '\u0653', '\u0654',
-        '\u0655', '\u0656', '\u0657', '\u0658', '\u0670',
-    ])
+def log_print(message, log_file=None, log_only=False):
+    """Print to console and log file
 
-    text = ''.join(c for c in text if c not in arabic_diacritics)
-
-    # Normalize hamza variants
-    hamza_map = {
-        'إ': 'ا', 'أ': 'ا', 'آ': 'ا',
-        'ؤ': 'و', 'ئ': 'ي'
-    }
-
-    for old, new in hamza_map.items():
-        text = text.replace(old, new)
-
-    return text
+    Args:
+        message: Message to print/log
+        log_file: Path to log file
+        log_only: If True, only write to log file (not console)
+    """
+    if not log_only:
+        print(message)
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(message + '\n')
 
 
-def test_model(model_path, vocab_path, quran_path):
+def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words, test_count=100, log_file=None, skip_position=None, replace_position=None, vocab_words=None):
+    """Test model with specific number of input words
+
+    Args:
+        skip_position: If set, skip this word position (0-indexed)
+        replace_position: If set, replace this word position with random wrong word (0-indexed)
+        vocab_words: List of vocabulary words for replacement
+    """
+
+    bos_token = word_to_idx['<s>']
+    eos_token = word_to_idx['</s>']
+    reader_token = word_to_idx['القاريء:']
+    ayah_token = word_to_idx['الاية:']
+
+    correct = 0
+    total = 0
+
+    # Filter ayat with at least 6 words
+    valid_indices = [i for i, ayah in enumerate(ayat) if len(ayah.split()) >= 6]
+
+    # Randomly select from valid ayat only
+    test_indices = random.sample(valid_indices, min(test_count, len(valid_indices)))
+
+    for idx in test_indices:
+        ayah = ayat[idx]
+        words = ayah.split()
+
+        # Get input words based on variant type
+        if skip_position is not None:
+            # Skip variant (similar to dataset generation)
+            if len(words) <= 3:
+                input_words = words[:min(len(words), num_input_words)]
+            else:
+                # Take words before skip position
+                before_skip = words[0:skip_position]
+                # Calculate how many more words we need
+                remaining = num_input_words - len(before_skip)
+                # Take words after skip position
+                after_skip = words[skip_position+1:min(len(words), skip_position+1+remaining)]
+                input_words = before_skip + after_skip
+        elif replace_position is not None and vocab_words:
+            # Replace word at position variant
+            if len(words) <= 3:
+                input_words = words[:min(len(words), num_input_words)]
+            else:
+                input_words = words[:min(len(words), num_input_words)].copy()
+                # Replace word at position with random wrong word
+                if replace_position < len(input_words):
+                    original_word = input_words[replace_position]
+                    replacement_word = random.choice(vocab_words)
+                    while replacement_word == original_word and len(vocab_words) > 1:
+                        replacement_word = random.choice(vocab_words)
+                    input_words[replace_position] = replacement_word
+        else:
+            # Regular variant
+            input_words = words[:min(num_input_words, len(words))]
+
+        expected_output_words = words[:min(6, len(words))]
+
+        # Build sequence: <s> القاريء: [input_words] الاية: [expected_output] </s>
+        sequence_tokens = [bos_token, reader_token]
+        for word in input_words:
+            token = word_to_idx.get(word, 0)
+            sequence_tokens.append(token)
+        sequence_tokens.append(ayah_token)
+
+        expected_output_tokens = []
+        for word in expected_output_words:
+            token = word_to_idx.get(word, 0)
+            expected_output_tokens.append(token)
+
+        sequence_tokens.extend(expected_output_tokens)
+        sequence_tokens.append(eos_token)
+
+        # Convert to tensor
+        input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+        attention_mask = torch.ones_like(input_tensor).to(device)
+
+        # Get model predictions
+        with torch.no_grad():
+            logits = model(input_tensor, attention_mask=attention_mask)
+            predictions = torch.argmax(logits, dim=-1)
+
+        # Find where الاية: is
+        ayah_pos = sequence_tokens.index(ayah_token)
+
+        # Get predicted tokens (after الاية:, before </s>)
+        predicted_tokens = predictions[0, ayah_pos:ayah_pos + len(expected_output_tokens)].cpu().tolist()
+
+        # Check if prediction matches expected output
+        if predicted_tokens == expected_output_tokens:
+            correct += 1
+
+        total += 1
+
+        # Show first few examples (log only, not console)
+        if total <= 3:
+            predicted_words = [idx_to_word.get(t, '?') for t in predicted_tokens]
+            log_print(f'  Example {total}:', log_file, log_only=True)
+            log_print(f'    Input: {" ".join(input_words)}', log_file, log_only=True)
+            log_print(f'    Expected: {" ".join(expected_output_words)}', log_file, log_only=True)
+            log_print(f'    Predicted: {" ".join(predicted_words)}', log_file, log_only=True)
+            match_count = sum(1 for p, e in zip(predicted_tokens, expected_output_tokens) if p == e)
+            log_print(f'    Match: {match_count}/{len(expected_output_tokens)} words', log_file, log_only=True)
+            log_print('', log_file, log_only=True)
+
+    accuracy = 100 * correct / total if total > 0 else 0
+    return accuracy, total
+
+
+def test_model(model_path, vocab_path, quran_path, log_file=None):
     """Test the trained model"""
+
+    # Backup existing log file and clear it (log only)
+    if log_file and os.path.exists(log_file):
+        backup_file = log_file.replace('.txt', '_backup.txt')
+        shutil.copy2(log_file, backup_file)
+        # Clear the log file after backup
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write('')
+        log_print(f'✓ Log backup created: {backup_file}', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
     # Load vocabulary
     word_to_idx, idx_to_word, vocab_size = load_vocabulary(vocab_path)
-    print(f'Vocabulary size: {vocab_size}')
+    log_print(f'Vocabulary size: {vocab_size}', log_file)
+    log_print('', log_file)
 
-    # Load model
-    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-    print(f'Using device: {device}')
+    # Set device
+    if torch.backends.mps.is_available():
+        device = torch.device('mps')
+        log_print('🚀 Using Metal GPU (Apple Silicon)', log_file)
+    elif torch.cuda.is_available():
+        device = torch.device('cuda')
+        log_print('🚀 Using CUDA GPU', log_file)
+    else:
+        device = torch.device('cpu')
+        log_print('Using CPU', log_file)
+    log_print(f'Device: {device}', log_file)
+    log_print('', log_file)
 
+    # Create model (same architecture as training)
     model = QuranSeq2SeqModel(
         vocab_size=vocab_size,
         max_length=50,
-        d_model=256,
-        n_heads=8,
-        n_layers=6,
-        d_ff=1024,
+        d_model=128,
+        n_heads=4,
+        n_layers=4,
+        d_ff=512,
         dropout=0.1
     )
 
+    # Load checkpoint
     checkpoint = torch.load(model_path, map_location=device)
-    model.load_state_dict(checkpoint['model'])
+
+    # Handle both old and new checkpoint formats
+    if 'model' in checkpoint:
+        model.load_state_dict(checkpoint['model'])
+    elif 'model_state_dict' in checkpoint:
+        model.load_state_dict(checkpoint['model_state_dict'])
+    else:
+        model.load_state_dict(checkpoint)
+
     model = model.to(device)
     model.eval()
 
-    print(f'Model loaded from {model_path}')
-    print(f'Model epoch: {checkpoint.get("epoch", "N/A") + 1}')
-    print(f'Model accuracy: {checkpoint.get("accuracy", "N/A")}%')
-    print(f'Model loss: {checkpoint.get("loss", "N/A")}')
-    print()
+    epoch_num = checkpoint.get('epoch', -1) + 1 if 'epoch' in checkpoint else 'N/A'
+    accuracy_val = f"{checkpoint.get('accuracy', 0):.1f}%" if 'accuracy' in checkpoint else 'N/A'
+    loss_val = f"{checkpoint.get('loss', 0):.4f}" if 'loss' in checkpoint else 'N/A'
 
-    # Load Quran data
+    log_print(f'✓ Model loaded from {model_path}', log_file)
+    log_print(f'  Epoch: {epoch_num}', log_file)
+    log_print(f'  Training Accuracy: {accuracy_val}', log_file)
+    log_print(f'  Training Loss: {loss_val}', log_file)
+    log_print('', log_file)
+
+    # Count parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    log_print(f'Total parameters: {total_params:,}', log_file)
+    log_print('', log_file)
+
+    # Load Android normalized Quran data
     ayat = load_quran_data(quran_path)
-    print(f'Total ayat: {len(ayat)}')
-    print()
+    log_print(f'Total ayat: {len(ayat)}', log_file)
+    log_print('', log_file)
 
-    # Test with a few examples
-    test_indices = [0, 1, 10, 100, 500, 1000, 5000]
+    # Get vocabulary words for replacement tests
+    vocab_words = [word for word in word_to_idx.keys() if word not in ['<s>', '</s>', 'القاريء:', 'الاية:']]
 
-    for idx in test_indices:
-        if idx >= len(ayat):
-            continue
+    # Test with different input lengths and variants
+    log_print('=' * 60, log_file, log_only=True)
+    log_print('TESTING WITH DIFFERENT INPUT WORD COUNTS AND VARIANTS', log_file, log_only=True)
+    log_print('=' * 60, log_file, log_only=True)
+    log_print('', log_file, log_only=True)
 
-        ayah = ayat[idx]
-        words = normalize_arabic(ayah).split()
+    results = {}
 
-        if len(words) < 5:
-            continue
+    # Test regular (no skip, no replace) for 3-6 input words
+    for num_input_words in range(3, 7):
+        test_name = f'{num_input_words} words'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words, test_count=100, log_file=log_file)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-        # Get first 10 words for input
-        input_words = words[:10]
-        expected_output_words = words[:5]
+    # Test skip first word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (skip 1st)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words - 1, test_count=100, log_file=log_file, skip_position=0)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-        # Build input sequence: القاريء: [input_words] الاية:
-        reader_token = word_to_idx.get('القاريء:', 3)
-        ayah_token = word_to_idx.get('الاية:', 4)
-        unk_token = word_to_idx.get('<unk>', 0)
+    # Test skip second word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (skip 2nd)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words - 1, test_count=100, log_file=log_file, skip_position=1)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-        input_tokens = [reader_token]
-        for word in input_words:
-            token = word_to_idx.get(word, unk_token)
-            input_tokens.append(token)
-        input_tokens.append(ayah_token)
+    # Test skip third word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (skip 3rd)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words - 1, test_count=100, log_file=log_file, skip_position=2)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-        # Convert to tensor
-        input_tensor = torch.tensor([input_tokens], dtype=torch.long).to(device)
+    # Test skip fourth word (for 5-6 input words)
+    for num_input_words in range(5, 7):
+        test_name = f'{num_input_words} words (skip 4th)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words - 1, test_count=100, log_file=log_file, skip_position=3)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-        # Generate output (greedy decoding)
-        with torch.no_grad():
-            generated_tokens = input_tokens.copy()
+    # Test skip fifth word (only for 6 input words)
+    for num_input_words in range(6, 7):
+        test_name = f'{num_input_words} words (skip 5th)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words - 1, test_count=100, log_file=log_file, skip_position=4)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-            for _ in range(5):  # Generate 5 words
-                current_input = torch.tensor([generated_tokens], dtype=torch.long).to(device)
-                logits = model(current_input)
+    # Test replace first word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (wrong 1st)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words, test_count=100, log_file=log_file, replace_position=0, vocab_words=vocab_words)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-                # Get prediction for last position
-                next_token_logits = logits[0, -1, :]
-                next_token = torch.argmax(next_token_logits).item()
+    # Test replace second word (for 4-6 input words)
+    for num_input_words in range(4, 7):
+        test_name = f'{num_input_words} words (wrong 2nd)'
+        log_print(f'Testing {test_name} → 6 output words:', log_file, log_only=True)
+        log_print('-' * 60, log_file, log_only=True)
+        accuracy, total = test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_input_words, test_count=100, log_file=log_file, replace_position=1, vocab_words=vocab_words)
+        results[test_name] = accuracy
+        log_print(f'Accuracy: {accuracy:.1f}% ({total} samples tested)', log_file, log_only=True)
+        log_print('', log_file, log_only=True)
 
-                generated_tokens.append(next_token)
+    # Summary
+    log_print('=' * 60, log_file)
+    log_print('SUMMARY', log_file)
+    log_print('=' * 60, log_file)
 
-        # Decode generated tokens (only the 5 words after الاية:)
-        generated_word_tokens = generated_tokens[len(input_tokens):]
-        generated_words = [idx_to_word.get(t, '<unk>') for t in generated_word_tokens]
+    # Group results by category
+    regular_results = {k: v for k, v in results.items() if 'skip' not in k and 'wrong' not in k}
+    skip_results = {k: v for k, v in results.items() if 'skip' in k}
+    wrong_results = {k: v for k, v in results.items() if 'wrong' in k}
 
-        print(f'Ayah {idx+1}:')
-        print(f'  Full ayah: {" ".join(words[:15])}...')
-        print(f'  Input (first 10 words): {" ".join(input_words)}')
-        print(f'  Expected output: {" ".join(expected_output_words)}')
-        print(f'  Generated output: {" ".join(generated_words)}')
-        print(f'  Match: {"✓" if generated_words == expected_output_words else "✗"}')
-        print()
+    # Display regular results
+    log_print('Regular (no skip, no wrong):', log_file)
+    for test_name, accuracy in regular_results.items():
+        log_print(f'  {test_name}: {accuracy:.1f}%', log_file)
+
+    # Display skip results
+    if skip_results:
+        log_print('', log_file)
+        log_print('Skip variants:', log_file)
+        for test_name, accuracy in skip_results.items():
+            log_print(f'  {test_name}: {accuracy:.1f}%', log_file)
+
+    # Display wrong word results
+    if wrong_results:
+        log_print('', log_file)
+        log_print('Wrong first word:', log_file)
+        for test_name, accuracy in wrong_results.items():
+            log_print(f'  {test_name}: {accuracy:.1f}%', log_file)
+
+    # Overall accuracy
+    if results:
+        overall_accuracy = sum(results.values()) / len(results)
+        log_print('', log_file)
+        log_print(f'Overall accuracy: {overall_accuracy:.1f}% (across {len(results)} tests)', log_file)
+    log_print('', log_file)
 
 
 def main():
-    model_path = '../train/checkpoint_best.pt'
+    log_file = 'log.txt'
+
+    model_path = '../model/quran_seq2seq_model.pt'
     vocab_path = '../model/vocabulary.json'
-    quran_path = '../../../Muhaffez/quran-simple-min.txt'
+    quran_path = '/Users/amraboelela/develop/android/AndroidArabicWhisper/muhaffez-whisper/datasets/quran-simple-norm.txt'
 
     if not os.path.exists(model_path):
-        print(f'Error: Checkpoint file not found at {model_path}')
-        print('Please train the model first using train.sh')
+        log_print(f'Error: Model file not found at {model_path}', log_file)
+        log_print('Please train the model first using train.sh', log_file)
         return
 
-    test_model(model_path, vocab_path, quran_path)
+    if not os.path.exists(vocab_path):
+        log_print(f'Error: Vocabulary file not found at {vocab_path}', log_file)
+        return
+
+    if not os.path.exists(quran_path):
+        log_print(f'Error: Quran file not found at {quran_path}', log_file)
+        return
+
+    test_model(model_path, vocab_path, quran_path, log_file)
 
 
 if __name__ == '__main__':

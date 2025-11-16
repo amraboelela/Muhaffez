@@ -66,21 +66,27 @@ class RandomSamplingDataset(Dataset):
     def __init__(self, datasets):
         self.datasets = datasets
         # Create a list of (dataset_idx, sample_idx) tuples for all samples
-        self.all_samples = []
+        self.base_samples = []
         for dataset_idx, dataset in enumerate(datasets):
             for sample_idx in range(len(dataset)):
-                self.all_samples.append((dataset_idx, sample_idx))
+                self.base_samples.append((dataset_idx, sample_idx))
 
-        # Shuffle the samples
-        random.shuffle(self.all_samples)
+        # This will be reshuffled each epoch
+        self.epoch_samples = None
+        self.reshuffle()
+
+    def reshuffle(self):
+        """Reshuffle samples for a new epoch"""
+        self.epoch_samples = self.base_samples.copy()
+        random.shuffle(self.epoch_samples)
 
     def __len__(self):
         # Total samples across all datasets
-        return len(self.all_samples)
+        return len(self.base_samples)
 
     def __getitem__(self, idx):
         # Get the dataset and sample index from the shuffled list
-        dataset_idx, sample_idx = self.all_samples[idx]
+        dataset_idx, sample_idx = self.epoch_samples[idx]
         return self.datasets[dataset_idx][sample_idx]
 
 
@@ -241,7 +247,7 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
 
 
 
-def train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None, prev_loss_init=None, checkpoint_path='../model/quran_seq2seq_model.pt'):
+def train_model(model, train_loader, combined_dataset, criterion, optimizer, scheduler, device, idx_to_word, epochs=50, log_file=None, prev_loss_init=None, checkpoint_path='../model/quran_seq2seq_model.pt'):
     """Train the seq2seq model"""
     model.train()
 
@@ -253,6 +259,9 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
     total_start_time = time.time()
 
     for epoch in range(epochs):
+        # Reshuffle the dataset for this epoch
+        combined_dataset.reshuffle()
+
         epoch_start_time = time.time()
         total_loss = 0
         total_tokens = 0
@@ -321,8 +330,8 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
                 'accuracy': accuracy,
             }, checkpoint_path)
 
-        # Early stopping if accuracy >= 100% (use rounded value to match display)
-        if round(accuracy, 1) >= 100.0:
+        # Early stopping if accuracy >= 99% (use rounded value to match display)
+        if round(accuracy, 1) >= 99.0:
             msg = f'✓ Early stopping: accuracy reached {accuracy:.1f}%'
             log_print(msg, log_file)
             break
@@ -438,6 +447,14 @@ def main():
             datasets.append(dataset_replacex1)
             log_print(f'  Dataset {input_words}to6_x1: {len(dataset_replacex1)} samples', log_file)
 
+        # Replace-second dataset: Nto6_x2 (for 4-6)
+        if input_words >= 4:
+            json_path = f'../datasets/dataset_{input_words}_to_6_x2.json'
+            if os.path.exists(json_path):
+                dataset_replacex2 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_replacex2)
+                log_print(f'  Dataset {input_words}to6_x2: {len(dataset_replacex2)} samples', log_file)
+
     # Use random sampling dataset
     combined_dataset = RandomSamplingDataset(datasets)
     log_print('', log_file)
@@ -508,7 +525,7 @@ def main():
     log_print('Starting training for up to 500 epochs...', log_file)
     log_print(f'Initial Learning Rate: {optimizer.param_groups[0]["lr"]:.1e}', log_file)
     log_print('', log_file)
-    best_accuracy, best_loss = train_model(model, train_loader, criterion, optimizer, scheduler, device, idx_to_word, epochs=500, log_file=log_file, prev_loss_init=checkpoint_prev_loss, checkpoint_path=checkpoint_path)
+    best_accuracy, best_loss = train_model(model, train_loader, combined_dataset, criterion, optimizer, scheduler, device, idx_to_word, epochs=500, log_file=log_file, prev_loss_init=checkpoint_prev_loss, checkpoint_path=checkpoint_path)
 
     log_print('', log_file)
     log_print('=' * 60, log_file)
