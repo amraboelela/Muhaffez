@@ -307,8 +307,8 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
         # Show sample predictions
         show_sample_predictions(model, train_loader, device, idx_to_word, num_samples=1, log_file=log_file)
 
-        # Save best checkpoint (based on highest accuracy only)
-        if accuracy > best_accuracy:
+        # Save best checkpoint (based on accuracy, then loss)
+        if accuracy > best_accuracy or (accuracy == best_accuracy and avg_loss < best_loss):
             best_accuracy = accuracy
             best_loss = avg_loss
             best_model_state = model.state_dict().copy()
