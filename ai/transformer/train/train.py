@@ -463,6 +463,22 @@ def main():
                 datasets.append(dataset_replacex3)
                 log_print(f'  Dataset {input_words}to6_x3: {len(dataset_replacex3)} samples', log_file)
 
+        # Replace-fourth dataset: Nto6_x4 (for 5-6)
+        if input_words >= 5:
+            json_path = f'../datasets/dataset_{input_words}_to_6_x4.json'
+            if os.path.exists(json_path):
+                dataset_replacex4 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_replacex4)
+                log_print(f'  Dataset {input_words}to6_x4: {len(dataset_replacex4)} samples', log_file)
+
+        # Replace-fifth dataset: Nto6_x5 (only for 6)
+        if input_words >= 6:
+            json_path = f'../datasets/dataset_{input_words}_to_6_x5.json'
+            if os.path.exists(json_path):
+                dataset_replacex5 = QuranSeq2SeqFromJSONDataset(json_path, word_to_idx)
+                datasets.append(dataset_replacex5)
+                log_print(f'  Dataset {input_words}to6_x5: {len(dataset_replacex5)} samples', log_file)
+
     # Use random sampling dataset
     combined_dataset = RandomSamplingDataset(datasets)
     log_print('', log_file)
