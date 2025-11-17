@@ -124,7 +124,7 @@ def main():
 
         # Early stopping: 100% accuracy
         if round(acc, 1) == 100.0:
-            print(f'\n✅ CONVERGED at iteration {it+1}\!')
+            print(f'\n✅ CONVERGED at iteration {it+1}!')
             break
 
     print(f'\n{"="*60}')

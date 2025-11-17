@@ -10,8 +10,16 @@ import CoreML
 
 class AyaFinderMLModel {
     private var model: MLModel?
-    private var vocabulary: [String: Int] = [:]
-    private let maxLength = 60
+    private var wordToIdx: [String: Int] = [:]
+    private var idxToWord: [Int: String] = [:]
+    private let maxLength = 50
+
+    // Special tokens
+    private var padToken: Int = 0      // <pad>
+    private var bosToken: Int = 1      // <s>
+    private var eosToken: Int = 2      // </s>
+    private var readerToken: Int = 3   // القاريء:
+    private var ayahToken: Int = 4     // الاية:
 
     init() {
         loadModel()
@@ -22,10 +30,10 @@ class AyaFinderMLModel {
         do {
             let config = MLModelConfiguration()
             config.computeUnits = .all
-            model = try AyaFinder(configuration: config).model
-            print("AyaFinder model loaded successfully")
+            model = try QuranSeq2Seq(configuration: config).model
+            print("QuranSeq2Seq model loaded successfully")
         } catch {
-            print("Error loading AyaFinder model: \(error)")
+            print("Error loading QuranSeq2Seq model: \(error)")
         }
     }
 
@@ -37,85 +45,126 @@ class AyaFinderMLModel {
             return
         }
 
-        // Build word-to-index mapping from array
+        // Build word-to-index and index-to-word mappings from array
         for (index, word) in vocabArray.enumerated() {
-            vocabulary[word] = index
+            wordToIdx[word] = index
+            idxToWord[index] = word
         }
-        print("Vocabulary loaded: \(vocabulary.count) tokens")
+
+        // Get special token indices
+        padToken = wordToIdx["<pad>"] ?? 0
+        bosToken = wordToIdx["<s>"] ?? 1
+        eosToken = wordToIdx["</s>"] ?? 2
+        readerToken = wordToIdx["القاريء:"] ?? 3
+        ayahToken = wordToIdx["الاية:"] ?? 4
+
+        print("Vocabulary loaded: \(wordToIdx.count) tokens")
+        print("Special tokens - PAD: \(padToken), BOS: \(bosToken), EOS: \(eosToken), Reader: \(readerToken), Ayah: \(ayahToken)")
     }
 
-    func predict(text: String) -> (ayahIndex: Int, probability: Double, top5: [(Int, Double)])? {
-        guard let model = model else { return nil }
+    func predict(text: String) -> String? {
+        guard let model = model else {
+            print("Model not loaded")
+            return nil
+        }
 
-        // Normalize the input text using String extension
+        // Normalize the input text
         let normalizedText = text.normalizedArabic
 
-        // Tokenize the normalized input (limit to 60 chars)
-        let tokens = tokenize(text: normalizedText)
+        // Split into words
+        let inputWords = normalizedText.split(separator: " ").map { String($0) }
 
-        // Create MLMultiArray input
-        guard let input = try? MLMultiArray(shape: [1, 60], dataType: .int32) else {
+        guard !inputWords.isEmpty else {
+            print("No input words after normalization")
+            return nil
+        }
+
+        print("Input words: \(inputWords)")
+
+        // Build sequence: <s> القاريء: [input_words] الاية:
+        var sequenceTokens = [bosToken, readerToken]
+
+        // Add input word tokens (limit to first 6 words to leave room for output)
+        let maxInputWords = min(inputWords.count, 6)
+        for i in 0..<maxInputWords {
+            let word = inputWords[i]
+            if let token = wordToIdx[word] {
+                sequenceTokens.append(token)
+            } else {
+                print("Warning: word '\(word)' not in vocabulary, skipping")
+            }
+        }
+
+        // Add ayah marker
+        sequenceTokens.append(ayahToken)
+
+        print("Sequence length before padding: \(sequenceTokens.count)")
+
+        // Pad to maxLength using padToken
+        let attentionMask = Array(repeating: 1, count: sequenceTokens.count) +
+                           Array(repeating: 0, count: maxLength - sequenceTokens.count)
+        sequenceTokens += Array(repeating: padToken, count: maxLength - sequenceTokens.count)
+
+        // Create MLMultiArray inputs
+        guard let inputIds = try? MLMultiArray(shape: [1, NSNumber(value: maxLength)], dataType: .int32),
+              let attentionMaskArray = try? MLMultiArray(shape: [1, NSNumber(value: maxLength)], dataType: .int32) else {
             print("Error creating MLMultiArray")
             return nil
         }
 
-        for i in 0..<60 {
-            input[i] = NSNumber(value: tokens[i])
+        for i in 0..<maxLength {
+            inputIds[[0, i] as [NSNumber]] = NSNumber(value: sequenceTokens[i])
+            attentionMaskArray[[0, i] as [NSNumber]] = NSNumber(value: attentionMask[i])
         }
 
         // Run inference
-        guard let output = try? model.prediction(from: AyaFinderInput(input: input)),
-              let outputArray = output.featureValue(for: "output")?.multiArrayValue else {
+        guard let output = try? model.prediction(from: QuranSeq2SeqInput(input_ids: inputIds, attention_mask: attentionMaskArray)),
+              let logits = output.featureValue(for: "logits")?.multiArrayValue else {
             print("Error running inference")
             return nil
         }
 
-        // Get logits and apply softmax to get probabilities
-        var logits: [Double] = []
-        for i in 0..<outputArray.count {
-            logits.append(outputArray[i].doubleValue)
+        // Find position of الاية: marker in sequence
+        guard let ayahPos = sequenceTokens.firstIndex(of: ayahToken) else {
+            print("Ayah marker not found in sequence")
+            return nil
         }
 
-        // Apply softmax: exp(x) / sum(exp(x))
-        let maxLogit = logits.max() ?? 0
-        let expLogits = logits.map { exp($0 - maxLogit) }  // subtract max for numerical stability
-        let sumExp = expLogits.reduce(0, +)
-        let probabilities = expLogits.map { $0 / sumExp }
+        print("Ayah marker position: \(ayahPos)")
 
-        // Create array with indices and probabilities
-        var indexedProbs: [(index: Int, prob: Double)] = []
-        for (i, prob) in probabilities.enumerated() {
-            indexedProbs.append((i+1, prob))
+        // Get predicted tokens for the 6 output positions after الاية:
+        let outputLength = 6
+        var predictedWords: [String] = []
+
+        let vocabSize = wordToIdx.count
+        for i in 0..<outputLength {
+            let pos = ayahPos + i
+            guard pos < maxLength else { break }
+
+            // Find argmax across vocabulary for this position
+            var maxLogit = -Float.infinity
+            var maxIdx = 0
+
+            for vocabIdx in 0..<vocabSize {
+                let logit = logits[[0, pos, vocabIdx] as [NSNumber]].floatValue
+                if logit > maxLogit {
+                    maxLogit = logit
+                    maxIdx = vocabIdx
+                }
+            }
+
+            // Convert token to word
+            if let word = idxToWord[maxIdx] {
+                // Skip special tokens in output
+                if word != "<s>" && word != "</s>" && word != "القاريء:" && word != "الاية:" {
+                    predictedWords.append(word)
+                }
+            }
         }
 
-        // Sort by probability descending
-        indexedProbs.sort { $0.prob > $1.prob }
+        let predictedText = predictedWords.joined(separator: " ")
+        print("Predicted ayah text: \(predictedText)")
 
-        let topPrediction = indexedProbs[0]
-        let top5 = Array(indexedProbs.prefix(5)).map { ($0.index, $0.prob) }
-
-        return (topPrediction.index, topPrediction.prob, top5)
-    }
-
-    private func tokenize(text: String) -> [Int] {
-        let padToken = vocabulary["<PAD>"] ?? 0
-        let unkToken = vocabulary["<UNK>"] ?? 1
-
-        var tokens: [Int] = []
-
-        // Take first 60 characters
-        let prefix = String(text.prefix(60))
-
-        for char in prefix {
-            let token = vocabulary[String(char)] ?? unkToken
-            tokens.append(token)
-        }
-
-        // Pad to 60
-        while tokens.count < maxLength {
-            tokens.append(padToken)
-        }
-
-        return Array(tokens.prefix(maxLength))
+        return predictedText
     }
 }

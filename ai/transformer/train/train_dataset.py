@@ -64,7 +64,7 @@ def collate_fn(batch):
 
     # Find max length in batch
     max_len = max(len(x) for x in xs)
-    pad_token = 0  # Padding token (will be masked by attention_mask)
+    pad_token = 0  # <pad> token (will be masked by attention_mask)
     ignore_index = -100  # Standard ignore value for CrossEntropyLoss
 
     # Pad sequences

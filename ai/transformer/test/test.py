@@ -45,6 +45,7 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
 
     correct = 0
     total = 0
+    failed_samples = []  # Track failed samples
 
     # Filter ayat with at least 6 words
     valid_indices = [i for i, ayah in enumerate(ayat) if len(ayah.split()) >= 6]
@@ -112,6 +113,13 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
             logits = model(input_tensor, attention_mask=attention_mask)
             predictions = torch.argmax(logits, dim=-1)
 
+            # Get top-5 predictions for each position (for analysis)
+            top_k = 5
+            top_k_logits = torch.topk(logits[0], k=top_k, dim=-1)
+            top_k_indices = top_k_logits.indices.cpu().tolist()
+            top_k_probs = torch.softmax(logits[0], dim=-1)
+            top_k_prob_values = torch.gather(top_k_probs, 1, top_k_logits.indices).cpu().tolist()
+
         # Find where الاية: is
         ayah_pos = sequence_tokens.index(ayah_token)
 
@@ -121,6 +129,43 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
         # Check if prediction matches expected output
         if predicted_tokens == expected_output_tokens:
             correct += 1
+        else:
+            # Track failed sample with top-k alternatives
+            predicted_words = [idx_to_word.get(t, '?') for t in predicted_tokens]
+            match_count = sum(1 for p, e in zip(predicted_tokens, expected_output_tokens) if p == e)
+
+            # Get top-k alternatives for mismatched positions
+            alternatives = []
+            for i, (pred_token, exp_token) in enumerate(zip(predicted_tokens, expected_output_tokens)):
+                pos = ayah_pos + i
+                if pred_token != exp_token:
+                    # Get top-k words and probabilities for this position
+                    top_words = [idx_to_word.get(idx, '?') for idx in top_k_indices[pos]]
+                    top_probs = top_k_prob_values[pos]
+
+                    # Check if expected token is in top-k
+                    expected_rank = None
+                    if exp_token in top_k_indices[pos]:
+                        expected_rank = top_k_indices[pos].index(exp_token) + 1
+
+                    alternatives.append({
+                        'position': i,
+                        'expected_word': idx_to_word.get(exp_token, '?'),
+                        'predicted_word': idx_to_word.get(pred_token, '?'),
+                        'top_k_words': top_words,
+                        'top_k_probs': top_probs,
+                        'expected_rank': expected_rank
+                    })
+
+            failed_samples.append({
+                'input': input_words,
+                'expected': expected_output_words,
+                'predicted': predicted_words,
+                'match_count': match_count,
+                'total_words': len(expected_output_tokens),
+                'ayah_index': idx + 1,
+                'alternatives': alternatives
+            })
 
         total += 1
 
@@ -133,6 +178,34 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
             log_print(f'    Predicted: {" ".join(predicted_words)}', log_file, log_only=True)
             match_count = sum(1 for p, e in zip(predicted_tokens, expected_output_tokens) if p == e)
             log_print(f'    Match: {match_count}/{len(expected_output_tokens)} words', log_file, log_only=True)
+            log_print('', log_file, log_only=True)
+
+    # Print failed samples at the end
+    if failed_samples:
+        log_print(f'  Failed samples ({len(failed_samples)} total):', log_file, log_only=True)
+        log_print('  ' + '-' * 60, log_file, log_only=True)
+        for i, sample in enumerate(failed_samples, 1):
+            log_print(f'  Failed {i} (Ayah {sample["ayah_index"]}):', log_file, log_only=True)
+            log_print(f'    Input: {" ".join(sample["input"])}', log_file, log_only=True)
+            log_print(f'    Expected: {" ".join(sample["expected"])}', log_file, log_only=True)
+            log_print(f'    Predicted: {" ".join(sample["predicted"])}', log_file, log_only=True)
+            log_print(f'    Match: {sample["match_count"]}/{sample["total_words"]} words', log_file, log_only=True)
+
+            # Show top-k alternatives for mismatched positions
+            if sample.get('alternatives'):
+                log_print(f'    Mismatched positions:', log_file, log_only=True)
+                for alt in sample['alternatives']:
+                    pos = alt['position']
+                    expected = alt['expected_word']
+                    predicted = alt['predicted_word']
+                    rank_info = f" (expected rank: #{alt['expected_rank']})" if alt['expected_rank'] else " (expected NOT in top-5)"
+
+                    log_print(f'      Position {pos}: expected="{expected}", predicted="{predicted}"{rank_info}', log_file, log_only=True)
+                    log_print(f'        Top-5 alternatives:', log_file, log_only=True)
+                    for j, (word, prob) in enumerate(zip(alt['top_k_words'], alt['top_k_probs']), 1):
+                        marker = " ✓" if word == expected else ""
+                        log_print(f'          {j}. {word} ({prob:.3f}){marker}', log_file, log_only=True)
+
             log_print('', log_file, log_only=True)
 
     accuracy = 100 * correct / total if total > 0 else 0

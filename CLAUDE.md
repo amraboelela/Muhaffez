@@ -112,3 +112,4 @@ QuranModel provides:
 - Supports automatic detection of "بسم الله الرحمن الرحيم" and "أعوذ بالله من الشيطان الرجيم"
 - from now on, do not run the train.sh let me do that for you
 - never run python3 train.py 2>&1 | head -50 by yourself!
+- Do not read the whole vocabulary.json file, just read its head

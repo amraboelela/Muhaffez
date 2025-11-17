@@ -66,4 +66,4 @@ log*.txt
 *.pt
 *.pth
 log.txt
-
+*/.DS_Store

@@ -173,7 +173,7 @@ class MuhaffezViewModel {
         }
         // Fallback with debounce if no matches
         if foundAyat.isEmpty || textToPredict.count < 17 {
-            print("foundAyat.isEmpty || textToPredict.count < 17")
+            print("foundAyat.isEmpty || textToPredict.count < 17, Timer.scheduledTimer(withTimeInterval: 1.0")
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.performFallbackMatch()
@@ -188,44 +188,57 @@ class MuhaffezViewModel {
         updatingFoundAyat = false
     }
 
-    // Returns ayah index if best match from top 5 ML predictions has similarity > 85%
+    // Returns ayah index using transformer model prediction + prefix matching
     func tryMLModelMatch() -> Int? {
-        guard let prediction = mlModel.predict(text: textToPredict) else {
+        print("tryMLModelMatch")
+        guard let predictedText = mlModel.predict(text: textToPredict) else {
+            print("ML Model prediction failed")
             return nil
         }
 
-        print("ML Model prediction - Index: \(prediction.ayahIndex), Probability: \(prediction.probability)")
-        print("Top 5 predictions:")
-        for (index, prob) in prediction.top5 {
-            print("  [\(index)] \(String(format: "%.2f%%", prob * 100)): \(QuranModel.shared.quranLines[index])")
-        }
+        print("ML Model predicted text: \(predictedText)")
 
-        // Check top 5 predictions and return the one with highest similarity to normalized voice
-        guard !textToPredict.isEmpty else {
-            print("normVoice is empty, returning nil")
+        // Use the predicted text to find matching ayat using prefix matching
+        // Normalize the predicted text
+        let normPredicted = predictedText.normalizedArabic
+
+        guard !normPredicted.isEmpty else {
+            print("Predicted text is empty")
             return nil
         }
 
-        var bestMatch: (index: Int, similarity: Double) = (prediction.ayahIndex, 0.0)
+        // Find ayat that match the predicted prefix
+        var matchedAyat: [(index: Int, similarity: Double)] = []
 
-        for (index, _) in prediction.top5 {
-            let ayahNorm = quranLines[index].normalizedArabic
-            let ayahPrefix = String(ayahNorm.prefix(textToPredict.count))
-            let textPrefix = String(textToPredict.prefix(ayahPrefix.count))
-            let similarity = textPrefix.similarity(to: ayahPrefix)
+        for (index, line) in quranLines.enumerated() {
+            let normLine = line.normalizedArabic
 
-            if similarity > bestMatch.similarity {
-                bestMatch = (index, similarity)
+            // Check if predicted text is prefix of ayah or vice versa
+            if normLine.hasPrefix(normPredicted) || normPredicted.hasPrefix(normLine) {
+                // Calculate similarity for ranking
+                let similarity = normPredicted.similarity(to: String(normLine.prefix(normPredicted.count)))
+                matchedAyat.append((index, similarity))
             }
         }
 
-        print("#coreml Best match: [\(bestMatch.index)] with \(String(format: "%.2f", bestMatch.similarity)) similarity - \(QuranModel.shared.quranLines[bestMatch.index])")
-        if bestMatch.similarity >= 0.7 {
-            return bestMatch.index
-        } else {
-            print("#coreml Best match rejected - similarity too low: \(String(format: "%.2f", bestMatch.similarity))")
-            return nil
+        // Sort by similarity descending
+        matchedAyat.sort { $0.similarity > $1.similarity }
+
+        if let bestMatch = matchedAyat.first {
+            print("#coreml Best match: [\(bestMatch.index)] with \(String(format: "%.2f", bestMatch.similarity)) similarity")
+            print("#coreml   Predicted: \(predictedText)")
+            print("#coreml   Ayah: \(quranLines[bestMatch.index])")
+
+            if bestMatch.similarity >= 0.7 {
+                return bestMatch.index
+            } else {
+                print("#coreml Best match rejected - similarity too low: \(String(format: "%.2f", bestMatch.similarity))")
+                return nil
+            }
         }
+
+        print("#coreml No matches found for predicted text")
+        return nil
     }
 
     private func performFallbackMatch() {

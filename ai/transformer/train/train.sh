@@ -7,6 +7,7 @@ LOG_FILE="log.txt"
 echo "Starting Quran Seq2Seq Model Training (Combined 10→3 Word Datasets)..."
 echo "======================================================================="
 echo ""
+echo "Using caffeinate to prevent system sleep (display can sleep to save power)..."
 echo "Training in progress... (check $LOG_FILE for details)"
 echo ""
 
@@ -17,7 +18,8 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
 fi
 
 # Run training and capture output
-python3 train.py > "$LOG_FILE" 2>&1
+# Use caffeinate to prevent system sleep (allows display to sleep, keeps GPU active)
+caffeinate -i python3 train.py > "$LOG_FILE" 2>&1
 
 # Check if training completed successfully
 if [ $? -eq 0 ]; then
