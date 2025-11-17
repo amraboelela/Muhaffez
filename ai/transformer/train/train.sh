@@ -19,7 +19,8 @@ fi
 
 # Run training and capture output
 # Use caffeinate to prevent system sleep (allows display to sleep, keeps GPU active)
-caffeinate -i python3 train.py > "$LOG_FILE" 2>&1
+# Use -u for unbuffered output so log file updates immediately
+caffeinate -i python3 -u train.py > "$LOG_FILE" 2>&1
 
 # Check if training completed successfully
 if [ $? -eq 0 ]; then

@@ -92,14 +92,16 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
         # Build sequence: <s> القاريء: [input_words] الاية: [expected_output] </s>
         sequence_tokens = [bos_token, reader_token]
         for word in input_words:
-            token = word_to_idx.get(word, 0)
-            sequence_tokens.append(token)
+            if word in word_to_idx:
+                token = word_to_idx[word]
+                sequence_tokens.append(token)
         sequence_tokens.append(ayah_token)
 
         expected_output_tokens = []
         for word in expected_output_words:
-            token = word_to_idx.get(word, 0)
-            expected_output_tokens.append(token)
+            if word in word_to_idx:
+                token = word_to_idx[word]
+                expected_output_tokens.append(token)
 
         sequence_tokens.extend(expected_output_tokens)
         sequence_tokens.append(eos_token)

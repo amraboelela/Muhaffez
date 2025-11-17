@@ -3,13 +3,18 @@
 Train on a single dataset specified by command line argument
 Usage: python train_dataset.py dataset_3_to_5.json
 """
+import sys
+import os
+
+# Force unbuffered output
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
 import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 from seq2seq_model import QuranSeq2SeqModel, load_vocabulary
 import time
@@ -131,8 +136,10 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
     import random
     model.eval()
 
-    reader_token = 2  # القاريء:
-    ayah_token = 3    # الاية:
+    # Look up special token IDs from idx_to_word (reversed mapping)
+    word_to_idx = {word: idx for idx, word in idx_to_word.items()}
+    reader_token = word_to_idx['القاريء:']
+    ayah_token = word_to_idx['الاية:']
 
     dataset = data_loader.dataset
     random_indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
@@ -193,10 +200,11 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
     total_start_time = time.time()
 
     for epoch in range(epochs):
-        print(f'Starting epoch {epoch+1}...', flush=True)
         epoch_start_time = time.time()
         total_loss = 0
         total_tokens = 0
+
+        total_batches = len(train_loader)
 
         for batch_idx, (data, target, mask, attention_mask, _) in enumerate(train_loader):
             data = data.to(device)

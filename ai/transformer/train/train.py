@@ -183,8 +183,10 @@ def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples
     import random
     model.eval()
 
-    reader_token = 2  # القاريء:
-    ayah_token = 3    # الاية:
+    # Look up special token IDs from idx_to_word (reversed mapping)
+    word_to_idx = {word: idx for idx, word in idx_to_word.items()}
+    reader_token = word_to_idx['القاريء:']
+    ayah_token = word_to_idx['الاية:']
 
     # Randomly select one batch from the data_loader
     dataset = data_loader.dataset
@@ -361,7 +363,8 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
 
 
 def main():
-    log_file = 'log.txt'
+    # Don't specify log file - let train.sh handle output redirection
+    log_file = None
 
     log_print('=' * 60, log_file)
     log_print('QURAN SEQ2SEQ TRANSFORMER - COMBINED 10→3 WORDS', log_file)
