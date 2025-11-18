@@ -89,7 +89,7 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
 
         expected_output_words = words[:min(6, len(words))]
 
-        # Build sequence: <s> القاريء: [input_words] الاية: [expected_output] </s>
+        # Build initial sequence: <s> القاريء: [input_words] الاية:
         sequence_tokens = [bos_token, reader_token]
         for word in input_words:
             if word in word_to_idx:
@@ -97,67 +97,46 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
                 sequence_tokens.append(token)
         sequence_tokens.append(ayah_token)
 
+        # Expected output tokens for comparison
         expected_output_tokens = []
         for word in expected_output_words:
             if word in word_to_idx:
                 token = word_to_idx[word]
                 expected_output_tokens.append(token)
 
-        sequence_tokens.extend(expected_output_tokens)
-        sequence_tokens.append(eos_token)
+        # Autoregressive generation: predict one token at a time
+        predicted_tokens = []
+        max_output_words = 6
 
-        # Convert to tensor
-        input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
-        attention_mask = torch.ones_like(input_tensor).to(device)
+        for i in range(max_output_words):
+            # Convert current sequence to tensor
+            input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+            attention_mask = torch.ones_like(input_tensor).to(device)
 
-        # Get model predictions
-        with torch.no_grad():
-            logits = model(input_tensor, attention_mask=attention_mask)
-            predictions = torch.argmax(logits, dim=-1)
+            # Get model predictions
+            with torch.no_grad():
+                logits = model(input_tensor, attention_mask=attention_mask)
+                predictions_argmax = torch.argmax(logits, dim=-1)
 
-            # Get top-5 predictions for each position (for analysis)
-            top_k = 5
-            top_k_logits = torch.topk(logits[0], k=top_k, dim=-1)
-            top_k_indices = top_k_logits.indices.cpu().tolist()
-            top_k_probs = torch.softmax(logits[0], dim=-1)
-            top_k_prob_values = torch.gather(top_k_probs, 1, top_k_logits.indices).cpu().tolist()
+            # Get prediction for the last position (next token to generate)
+            next_token = predictions_argmax[0, -1].item()
 
-        # Find where الاية: is
-        ayah_pos = sequence_tokens.index(ayah_token)
+            # Stop if we predict </s> or reach max length
+            if next_token == eos_token:
+                break
 
-        # Get predicted tokens (after الاية:, before </s>)
-        predicted_tokens = predictions[0, ayah_pos:ayah_pos + len(expected_output_tokens)].cpu().tolist()
+            # Append predicted token
+            predicted_tokens.append(next_token)
+            sequence_tokens.append(next_token)
 
-        # Check if prediction matches expected output
-        if predicted_tokens == expected_output_tokens:
+        # Check if prediction matches expected output (comparing only up to min length)
+        min_len = min(len(predicted_tokens), len(expected_output_tokens))
+        if predicted_tokens[:min_len] == expected_output_tokens[:min_len] and len(predicted_tokens) == len(expected_output_tokens):
             correct += 1
         else:
-            # Track failed sample with top-k alternatives
+            # Track failed sample
             predicted_words = [idx_to_word.get(t, '?') for t in predicted_tokens]
             match_count = sum(1 for p, e in zip(predicted_tokens, expected_output_tokens) if p == e)
-
-            # Get top-k alternatives for mismatched positions
-            alternatives = []
-            for i, (pred_token, exp_token) in enumerate(zip(predicted_tokens, expected_output_tokens)):
-                pos = ayah_pos + i
-                if pred_token != exp_token:
-                    # Get top-k words and probabilities for this position
-                    top_words = [idx_to_word.get(idx, '?') for idx in top_k_indices[pos]]
-                    top_probs = top_k_prob_values[pos]
-
-                    # Check if expected token is in top-k
-                    expected_rank = None
-                    if exp_token in top_k_indices[pos]:
-                        expected_rank = top_k_indices[pos].index(exp_token) + 1
-
-                    alternatives.append({
-                        'position': i,
-                        'expected_word': idx_to_word.get(exp_token, '?'),
-                        'predicted_word': idx_to_word.get(pred_token, '?'),
-                        'top_k_words': top_words,
-                        'top_k_probs': top_probs,
-                        'expected_rank': expected_rank
-                    })
 
             failed_samples.append({
                 'input': input_words,
@@ -165,8 +144,7 @@ def test_model_with_inputs(model, word_to_idx, idx_to_word, ayat, device, num_in
                 'predicted': predicted_words,
                 'match_count': match_count,
                 'total_words': len(expected_output_tokens),
-                'ayah_index': idx + 1,
-                'alternatives': alternatives
+                'ayah_index': idx + 1
             })
 
         total += 1

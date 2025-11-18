@@ -96,32 +96,63 @@ def collate_fn(batch):
 
 
 def calculate_accuracy(model, data_loader, device, idx_to_word):
-    """Calculate accuracy on the dataset"""
+    """Calculate accuracy on the dataset using autoregressive generation"""
     model.eval()
+
+    # Get word_to_idx from idx_to_word
+    word_to_idx = {word: idx for idx, word in idx_to_word.items()}
+    eos_token = word_to_idx['</s>']
+    ayah_token = word_to_idx['الاية:']
+
     correct_sequences = 0
     total_sequences = 0
 
     with torch.no_grad():
         for data, target, mask, attention_mask, expected_outputs in data_loader:
             data = data.to(device)
-            target = target.to(device)
-            mask = mask.to(device)
-            attention_mask = attention_mask.to(device)
-
-            logits = model(data, attention_mask=attention_mask)
-            predictions = torch.argmax(logits, dim=-1)
-
             batch_size = data.shape[0]
 
             for i in range(batch_size):
-                mask_positions = torch.where(mask[i] > 0)[0]
-                if len(mask_positions) == 0:
+                # Find position of الاية: marker in the input
+                seq = data[i].cpu().tolist()
+                try:
+                    ayah_pos = seq.index(ayah_token)
+                except ValueError:
                     continue
 
+                # Build initial sequence up to (and including) الاية:
+                initial_sequence = seq[:ayah_pos + 1]
+                sequence_tokens = initial_sequence.copy()
+
+                # Get expected tokens
                 expected_tokens = expected_outputs[i]
                 num_expected = len(expected_tokens)
-                predicted_tokens = predictions[i, mask_positions[:num_expected]].cpu().tolist()
 
+                # Autoregressive generation
+                predicted_tokens = []
+                max_output_words = num_expected
+
+                for j in range(max_output_words):
+                    # Convert current sequence to tensor
+                    input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+                    attention_mask_tensor = torch.ones_like(input_tensor).to(device)
+
+                    # Get model predictions
+                    logits = model(input_tensor, attention_mask=attention_mask_tensor)
+                    predictions = torch.argmax(logits, dim=-1)
+
+                    # Get prediction for the last position (next token to generate)
+                    next_token = predictions[0, -1].item()
+
+                    # Stop if we predict </s>
+                    if next_token == eos_token:
+                        break
+
+                    # Append predicted token
+                    predicted_tokens.append(next_token)
+                    sequence_tokens.append(next_token)
+
+                # Compare predicted tokens with expected tokens
                 if predicted_tokens == expected_tokens:
                     correct_sequences += 1
                 total_sequences += 1
@@ -206,32 +237,78 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
 
         total_batches = len(train_loader)
 
-        for batch_idx, (data, target, mask, attention_mask, _) in enumerate(train_loader):
+        for batch_idx, (data, target, mask, attention_mask, expected_outputs) in enumerate(train_loader):
             data = data.to(device)
-            target = target.to(device)
-            mask = mask.to(device)
-            attention_mask = attention_mask.to(device)
+            batch_size = data.shape[0]
 
-            logits = model(data, attention_mask=attention_mask)
+            # Get special tokens
+            word_to_idx = {word: idx for idx, word in idx_to_word.items()}
+            eos_token = word_to_idx['</s>']
+            ayah_token = word_to_idx['الاية:']
 
-            batch_size, seq_len, vocab_size = logits.shape
-            logits_flat = logits.view(-1, vocab_size)
-            target_flat = target.view(-1)
-            mask_flat = mask.view(-1)
+            batch_loss = 0
+            batch_tokens = 0
 
-            loss_per_token = criterion(logits_flat, target_flat)
-            loss_per_token = loss_per_token * mask_flat
+            # Process each sample in the batch
+            for i in range(batch_size):
+                # Find position of الاية: marker
+                seq = data[i].cpu().tolist()
+                try:
+                    ayah_pos = seq.index(ayah_token)
+                except ValueError:
+                    continue
 
-            num_tokens = mask_flat.sum()
-            loss = loss_per_token.sum() / (num_tokens + 1e-8)
+                # Build initial sequence up to (and including) الاية:
+                sequence_tokens = seq[:ayah_pos + 1]
 
+                # Get expected output tokens
+                expected_tokens = expected_outputs[i]
+                num_expected = len(expected_tokens)
+
+                # Autoregressive generation with loss calculation
+                sample_loss = 0
+
+                for j in range(num_expected):
+                    # Convert current sequence to tensor
+                    input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+                    attention_mask_tensor = torch.ones_like(input_tensor).to(device)
+
+                    # Forward pass
+                    logits = model(input_tensor, attention_mask=attention_mask_tensor)
+
+                    # Get logits for the last position (next token prediction)
+                    next_logits = logits[0, -1, :]  # [vocab_size]
+
+                    # Calculate loss for this position
+                    expected_token = expected_tokens[j]
+                    loss_at_pos = criterion(next_logits.unsqueeze(0), torch.tensor([expected_token], dtype=torch.long).to(device))
+                    sample_loss += loss_at_pos
+
+                    # Get predicted token (argmax) to feed to next step
+                    next_token = torch.argmax(next_logits).item()
+
+                    # Append predicted token for next iteration
+                    sequence_tokens.append(next_token)
+
+                # Average loss over tokens in this sample
+                if num_expected > 0:
+                    batch_loss += sample_loss
+                    batch_tokens += num_expected
+
+            # Average loss over batch
+            if batch_tokens > 0:
+                loss = batch_loss / batch_tokens
+            else:
+                continue
+
+            # Backpropagation and optimization
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
-            total_loss += loss.item() * num_tokens.item()
-            total_tokens += num_tokens.item()
+            total_loss += loss.item() * batch_tokens
+            total_tokens += batch_tokens
 
         accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
 

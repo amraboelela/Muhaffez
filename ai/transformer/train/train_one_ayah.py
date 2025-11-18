@@ -101,26 +101,79 @@ def main():
 
     model.train()
     for it in range(500):
+        # Autoregressive generation with loss calculation
+        initial_sequence = seq[:ayah_pos + 1]  # Up to and including الاية:
+        sequence_tokens = initial_sequence.copy()
+
+        total_loss = 0
+
+        # Zero gradients once at the start
         optimizer.zero_grad()
-        logits = model(x)
-        
-        loss_per_token = criterion(logits.view(-1, vocab_size), y.view(-1))
-        loss_per_token = loss_per_token.view(1, -1) * mask
-        loss = loss_per_token.sum() / (mask.sum() + 1e-8)
-        
-        loss.backward()
+
+        for j in range(len(output_tokens)):
+            # Convert current sequence to tensor
+            input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+
+            # Forward pass
+            logits = model(input_tensor)
+
+            # Get logits for the last position (next token prediction)
+            next_logits = logits[0, -1, :]  # [vocab_size]
+
+            # Calculate loss for this position
+            expected_token = output_tokens[j]
+            loss_at_pos = criterion(next_logits.unsqueeze(0), torch.tensor([expected_token], dtype=torch.long).to(device))
+
+            # Backpropagate on this token's loss immediately
+            loss_at_pos.backward()
+
+            # Accumulate loss value for logging only
+            total_loss += loss_at_pos.item()
+
+            # Get predicted token (argmax) to feed to next step
+            next_token = torch.argmax(next_logits).item()
+
+            # Append predicted token for next iteration
+            sequence_tokens.append(next_token)
+
+        # Average loss for logging
+        loss_value = total_loss / len(output_tokens)
+
+        # Clip gradients and update weights
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
 
         if (it + 1) % 10 == 0 or it == 0:
             with torch.no_grad():
-                preds = torch.argmax(logits[0], dim=-1).cpu().tolist()
-                mask_pos = torch.where(mask[0] > 0)[0].cpu().tolist()
-                pred_tokens = [preds[p] for p in mask_pos]
-                matches = sum(1 for p, e in zip(pred_tokens, output_tokens) if p == e)
-                acc = 100 * matches / len(output_tokens)
-                pred_words = [idx_to_word.get(t, '?') for t in pred_tokens]
-                print(f'Iter {it+1:3d} | Loss={loss.item():.4f} | Acc={acc:3.0f}% | {" ".join(pred_words)}')
+                # Autoregressive generation for true accuracy
+                initial_sequence = seq[:ayah_pos + 1]  # Up to and including الاية:
+                sequence_tokens = initial_sequence.copy()
+                predicted_tokens = []
+
+                for j in range(len(output_tokens)):
+                    # Convert current sequence to tensor
+                    input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+
+                    # Get model predictions
+                    logits = model(input_tensor)
+                    predictions = torch.argmax(logits, dim=-1)
+
+                    # Get prediction for the last position
+                    next_token = predictions[0, -1].item()
+
+                    # Stop if we predict </s>
+                    if next_token == eos:
+                        break
+
+                    # Append predicted token
+                    predicted_tokens.append(next_token)
+                    sequence_tokens.append(next_token)
+
+                # Calculate accuracy
+                matches = sum(1 for p, e in zip(predicted_tokens, output_tokens) if p == e)
+                acc = 100 * matches / len(output_tokens) if len(output_tokens) > 0 else 0
+                pred_words = [idx_to_word.get(t, '?') for t in predicted_tokens]
+                print(f'Iter {it+1:3d} | Loss={loss_value:.4f} | Acc={acc:3.0f}% | {" ".join(pred_words)}')
 
         # Early stopping: 100% accuracy
         if round(acc, 1) == 100.0:
@@ -128,7 +181,7 @@ def main():
             break
 
     print(f'\n{"="*60}')
-    print(f'Final: Loss={loss.item():.4f} Acc={acc:.0f}%')
+    print(f'Final: Loss={loss_value:.4f} Acc={acc:.0f}%')
     print('✅ SUCCESS!' if acc == 100 else '❌ FAILED')
     print('='*60)
 
@@ -140,7 +193,7 @@ def main():
             'optimizer': optimizer.state_dict(),
             'epoch': 0,  # Single ayah test doesn't have epochs
             'vocab_size': vocab_size,
-            'loss': loss.item(),
+            'loss': loss_value,
             'accuracy': acc,
         }, checkpoint_path)
         print('✓ Checkpoint saved!')

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Unit tests for specific ayah inputs - mirrors the iOS Swift tests
-Tests the PyTorch model with the same inputs as the iOS AyaFinderMLModelTests
+Test specific ayah inputs without padding - mirrors iOS AyaFinderMLModelTests
+Uses variable-length sequences like test.py (NO PADDING)
+Tests Al-An'am 6:18: "وهو القاهر فوق عباده وهو الحكيم الخبير"
 """
 import torch
 import sys
@@ -13,10 +14,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 from seq2seq_model import QuranSeq2SeqModel, load_vocabulary
 
 
-def predict_ayah(model, word_to_idx, idx_to_word, input_text, device, max_length=50):
+def predict_ayah(model, word_to_idx, idx_to_word, input_text, device, max_output_words=6):
     """
-    Predict ayah completion from input text
-    Mirrors iOS Swift approach - uses PADDING to fixed length
+    Predict ayah completion from input text using autoregressive generation
+    TRUE INFERENCE - predicts one token at a time without expected output
 
     Args:
         model: The trained model
@@ -24,13 +25,12 @@ def predict_ayah(model, word_to_idx, idx_to_word, input_text, device, max_length
         idx_to_word: Index to word mapping
         input_text: Input Arabic text
         device: torch device
-        max_length: Maximum sequence length (default 50)
+        max_output_words: Maximum number of output words to generate
 
     Returns:
-        Predicted ayah text (first 6 words) or None
+        Predicted ayah text or None
     """
     # Get special tokens
-    pad_token = word_to_idx['<pad>']
     bos_token = word_to_idx['<s>']
     eos_token = word_to_idx['</s>']
     reader_token = word_to_idx['القاريء:']
@@ -43,10 +43,10 @@ def predict_ayah(model, word_to_idx, idx_to_word, input_text, device, max_length
         print("No input words")
         return None
 
-    # Limit to first 6 words to leave room for output
+    # Limit to first 6 words
     input_words = input_words[:6]
 
-    # Build sequence: <s> القاريء: [input_words] الاية:
+    # Build initial sequence: <s> القاريء: [input_words] الاية:
     sequence_tokens = [bos_token, reader_token]
 
     for word in input_words:
@@ -56,44 +56,34 @@ def predict_ayah(model, word_to_idx, idx_to_word, input_text, device, max_length
 
     sequence_tokens.append(ayah_token)
 
-    print(f"Sequence length before padding: {len(sequence_tokens)}")
+    print(f"Initial sequence length: {len(sequence_tokens)} (before generation)")
 
-    # Pad to max_length
-    pad_length = max_length - len(sequence_tokens)
-    if pad_length > 0:
-        sequence_tokens.extend([pad_token] * pad_length)
-
-    # Create attention mask (1 for real tokens, 0 for padding)
-    attention_mask = [1] * (max_length - pad_length) + [0] * pad_length
-
-    # Convert to tensors
-    input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
-    attention_mask_tensor = torch.tensor([attention_mask], dtype=torch.long).to(device)
-
-    # Get model predictions
-    with torch.no_grad():
-        logits = model(input_tensor, attention_mask=attention_mask_tensor)
-        predictions = torch.argmax(logits, dim=-1)
-
-    # Find position of الاية: marker
-    ayah_pos = sequence_tokens.index(ayah_token)
-    print(f"Ayah marker position: {ayah_pos}")
-
-    # Get predicted tokens for 6 output positions after الاية:
-    output_length = 6
+    # Autoregressive generation: predict one token at a time
     predicted_words = []
 
-    for i in range(output_length):
-        pos = ayah_pos + i
-        if pos >= max_length:
+    for i in range(max_output_words):
+        # Convert current sequence to tensor
+        input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
+        attention_mask_tensor = torch.ones_like(input_tensor).to(device)
+
+        # Get model predictions
+        with torch.no_grad():
+            logits = model(input_tensor, attention_mask=attention_mask_tensor)
+            predictions = torch.argmax(logits, dim=-1)
+
+        # Get prediction for the last position (next token to generate)
+        next_token = predictions[0, -1].item()
+
+        # Stop if we predict </s>
+        if next_token == eos_token:
             break
 
-        pred_token = predictions[0, pos].item()
-
         # Convert token to word
-        word = idx_to_word.get(pred_token, '?')
+        word = idx_to_word.get(next_token, '?')
 
-        # Skip special tokens in output
+        # Skip special tokens but append to sequence
+        sequence_tokens.append(next_token)
+
         if word not in ['<s>', '</s>', 'القاريء:', 'الاية:', '<pad>']:
             predicted_words.append(word)
 
@@ -220,7 +210,7 @@ def test_partial_match(model, word_to_idx, idx_to_word, device):
 def main():
     """Run all tests"""
     print("="*80)
-    print("Quran Seq2Seq Model - Specific Input Tests")
+    print("Quran Seq2Seq Model - Specific Input Tests (No Padding)")
     print("Mirrors iOS AyaFinderMLModelTests")
     print("="*80)
 
