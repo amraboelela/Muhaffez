@@ -110,6 +110,8 @@ def main():
         # Zero gradients once at the start
         optimizer.zero_grad()
 
+        sample_loss = 0
+
         for j in range(len(output_tokens)):
             # Convert current sequence to tensor
             input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
@@ -124,20 +126,17 @@ def main():
             expected_token = output_tokens[j]
             loss_at_pos = criterion(next_logits.unsqueeze(0), torch.tensor([expected_token], dtype=torch.long).to(device))
 
-            # Backpropagate on this token's loss immediately
-            loss_at_pos.backward()
+            # Accumulate loss (keeps computation graph)
+            sample_loss += loss_at_pos
 
-            # Accumulate loss value for logging only
-            total_loss += loss_at_pos.item()
+            # TEACHER FORCING: Append ground truth token (not prediction)
+            sequence_tokens.append(expected_token)
 
-            # Get predicted token (argmax) to feed to next step
-            next_token = torch.argmax(next_logits).item()
-
-            # Append predicted token for next iteration
-            sequence_tokens.append(next_token)
+        # Backpropagate once per iteration (faster)
+        sample_loss.backward()
 
         # Average loss for logging
-        loss_value = total_loss / len(output_tokens)
+        loss_value = sample_loss.item() / len(output_tokens)
 
         # Clip gradients and update weights
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)

@@ -127,7 +127,7 @@ def collate_fn(batch):
 
 
 def calculate_accuracy(model, data_loader, device, idx_to_word):
-    """Calculate accuracy on the dataset using autoregressive generation"""
+    """Calculate accuracy on the dataset using autoregressive generation (SLOW but correct)"""
     model.eval()
 
     # Get word_to_idx from idx_to_word
@@ -193,12 +193,57 @@ def calculate_accuracy(model, data_loader, device, idx_to_word):
     return accuracy
 
 
+def calculate_fast_accuracy(model, data_loader, device, idx_to_word):
+    """Calculate accuracy using parallel evaluation (FAST - teacher forcing context)"""
+    model.eval()
+    correct_sequences = 0
+    total_sequences = 0
+
+    with torch.no_grad():
+        for data, target, mask, attention_mask, expected_outputs in data_loader:
+            data = data.to(device)
+            target = target.to(device)
+            mask = mask.to(device)
+            attention_mask = attention_mask.to(device)
+
+            # Forward pass (parallel - sees full sequence with causal masking)
+            logits = model(data, attention_mask=attention_mask)
+
+            # Get predictions
+            predictions = torch.argmax(logits, dim=-1)
+
+            batch_size = data.shape[0]
+
+            for i in range(batch_size):
+                # Find where the mask starts (after الاية:)
+                mask_positions = torch.where(mask[i] > 0)[0]
+                if len(mask_positions) == 0:
+                    continue
+
+                # Get expected tokens
+                expected_tokens = expected_outputs[i]
+                num_expected = len(expected_tokens)
+
+                # Get predicted tokens in the output section (only up to expected length)
+                predicted_tokens = predictions[i, mask_positions[:num_expected]].cpu().tolist()
+
+                # Compare
+                if predicted_tokens == expected_tokens:
+                    correct_sequences += 1
+                total_sequences += 1
+
+    accuracy = 100 * correct_sequences / total_sequences if total_sequences > 0 else 0
+    model.train()
+    return accuracy
+
+
 def log_print(message, log_file=None):
     """Print to console and log file"""
-    print(message)
+    print(message, flush=True)
     if log_file:
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(message + '\n')
+            f.flush()
 
 
 def show_sample_predictions(model, data_loader, device, idx_to_word, num_samples=3, log_file=None):
@@ -293,79 +338,36 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
 
         for batch_idx, (data, target, mask, attention_mask, expected_outputs) in enumerate(train_loader):
             data = data.to(device)
-            batch_size = data.shape[0]
+            target = target.to(device)
+            mask = mask.to(device)
+            attention_mask = attention_mask.to(device)
 
-            # Get special tokens
-            word_to_idx = {word: idx for idx, word in idx_to_word.items()}
-            eos_token = word_to_idx['</s>']
-            ayah_token = word_to_idx['الاية:']
+            # Forward pass (parallel - one pass per sample)
+            logits = model(data, attention_mask=attention_mask)
 
-            batch_loss = 0
-            batch_tokens = 0
+            # Reshape for loss computation
+            batch_size, seq_len, vocab_size = logits.shape
+            logits_flat = logits.view(-1, vocab_size)
+            target_flat = target.view(-1)
+            mask_flat = mask.view(-1)
 
-            # Zero gradients once at the start of batch
+            # Compute loss only on masked positions (after الاية:)
+            # Note: targets with -100 are automatically ignored by CrossEntropyLoss
+            loss_per_token = criterion(logits_flat, target_flat)
+            loss_per_token = loss_per_token * mask_flat
+
+            # Average over non-zero mask positions
+            num_tokens = mask_flat.sum()
+            loss = loss_per_token.sum() / (num_tokens + 1e-8)
+
+            # Backpropagation and optimization (per batch)
             optimizer.zero_grad()
-
-            # Process each sample in the batch
-            for i in range(batch_size):
-                # Find position of الاية: marker
-                seq = data[i].cpu().tolist()
-                try:
-                    ayah_pos = seq.index(ayah_token)
-                except ValueError:
-                    continue
-
-                # Build initial sequence up to (and including) الاية:
-                sequence_tokens = seq[:ayah_pos + 1]
-
-                # Get expected output tokens
-                expected_tokens = expected_outputs[i]
-                num_expected = len(expected_tokens)
-
-                # Autoregressive generation with loss calculation
-                for j in range(num_expected):
-                    # Convert current sequence to tensor
-                    input_tensor = torch.tensor([sequence_tokens], dtype=torch.long).to(device)
-                    attention_mask_tensor = torch.ones_like(input_tensor).to(device)
-
-                    # Forward pass
-                    logits = model(input_tensor, attention_mask=attention_mask_tensor)
-
-                    # Get logits for the last position (next token prediction)
-                    next_logits = logits[0, -1, :]  # [vocab_size]
-
-                    # Calculate loss for this position
-                    expected_token = expected_tokens[j]
-                    loss_at_pos = criterion(next_logits.unsqueeze(0), torch.tensor([expected_token], dtype=torch.long).to(device))
-
-                    # Backpropagate on this token's loss immediately
-                    loss_at_pos.backward()
-
-                    # Accumulate loss value for logging only
-                    batch_loss += loss_at_pos.item()
-                    batch_tokens += 1
-
-                    # Get predicted token (argmax) to feed to next step
-                    next_token = torch.argmax(next_logits).item()
-
-                    # Append predicted token for next iteration
-                    sequence_tokens.append(next_token)
-
-            # Skip if no tokens processed
-            if batch_tokens == 0:
-                continue
-
-            # Clip gradients and update weights once for the entire batch
+            loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
-            # Average loss for logging
-            avg_batch_loss = batch_loss / batch_tokens
-            total_loss += batch_loss
-            total_tokens += batch_tokens
-
-        # Calculate accuracy
-        accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
+            total_loss += loss.item() * num_tokens.item()
+            total_tokens += num_tokens.item()
 
         epoch_time = time.time() - epoch_start_time
         avg_loss = total_loss / total_tokens
@@ -375,44 +377,58 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
         seconds = int(epoch_time % 60)
         time_str = f'{minutes}m {seconds}s' if minutes > 0 else f'{seconds}s'
 
-        msg = f'Epoch {epoch+1} | Loss={avg_loss:.4f} | Accuracy={accuracy:.1f}% | LR={scheduler.get_last_lr()[0]:.1e} | Time={time_str}'
+        log_print(f'DEBUG: Epoch {epoch+1} completed training, calculating fast accuracy...', log_file)
+
+        # Calculate fast accuracy every epoch (teacher forcing context)
+        fast_accuracy = calculate_fast_accuracy(model, train_loader, device, idx_to_word)
+
+        log_print(f'DEBUG: Fast accuracy calculated: {fast_accuracy:.1f}%', log_file)
+
+        # No autoregressive accuracy during training - only at the end
+        accuracy = 0.0
+        msg = f'Epoch {epoch+1} | Loss={avg_loss:.4f} | Fast Acc={fast_accuracy:.1f}% | LR={scheduler.get_last_lr()[0]:.1e} | Time={time_str}'
         log_print(msg, log_file)
 
-        # Show sample predictions
-        show_sample_predictions(model, train_loader, device, idx_to_word, num_samples=1, log_file=log_file)
+        # Show sample predictions (removed - only show at end)
 
-        # Save best checkpoint (based on accuracy, then loss)
-        if accuracy > best_accuracy or (accuracy == best_accuracy and avg_loss < best_loss):
-            best_accuracy = accuracy
+        # Save best checkpoint (based on loss since we skip accuracy during training)
+        if avg_loss < best_loss:
             best_loss = avg_loss
-            best_model_state = model.state_dict().copy()
             torch.save({
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'epoch': epoch,
                 'vocab_size': model.vocab_size,
                 'loss': avg_loss,
-                'accuracy': accuracy,
+                'accuracy': 0.0,
             }, checkpoint_path)
 
-        # Early stopping if accuracy >= 97% (use rounded value to match display)
-        if round(accuracy, 1) >= 97.0:
-            msg = f'✓ Early stopping: accuracy reached {accuracy:.1f}%'
-            log_print(msg, log_file)
-            break
+        # Early stopping based on fast accuracy or LR minimum (removed autoregressive check)
 
         # Decay LR by 10% if loss increased (minimum 1e-7)
         current_lr = optimizer.param_groups[0]['lr']
         if avg_loss > prev_loss and current_lr > 1e-7:
-            new_lr = current_lr * 0.9
+            new_lr = max(current_lr * 0.9, 1e-7)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = new_lr
             log_print(f'  Loss increased! Reducing LR to {new_lr:.1e}', log_file)
+        elif avg_loss > prev_loss and current_lr <= 1e-7:
+            # LR at minimum and loss still increasing - stop training
+            log_print(f'✓ Early stopping: LR at minimum ({current_lr:.1e}) and loss increased', log_file)
+            break
 
         prev_loss = avg_loss
 
         # Step the scheduler
         scheduler.step(avg_loss)
+
+    # Final autoregressive accuracy calculation (if not already done)
+    if best_accuracy == 0.0:
+        log_print('', log_file)
+        log_print('Calculating final autoregressive accuracy...', log_file)
+        final_accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
+        log_print(f'✓ Final autoregressive accuracy: {final_accuracy:.1f}%', log_file)
+        best_accuracy = final_accuracy
 
     total_training_time = time.time() - total_start_time
     minutes = int(total_training_time // 60)
