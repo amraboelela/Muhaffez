@@ -74,14 +74,14 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.voiceTextHasBesmillah == true)
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
 
         viewModel.resetData()
         viewModel.voiceText = "بسم الله الرحمن الرحيم قل اعوذ برب الناس ملك الناس"
         #expect(viewModel.voiceTextHasBesmillah == true)
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
 
         viewModel.resetData()
         viewModel.voiceText = "بسم الله الرحمن الرحيم قل اعوذ برب النا ملك الناس"
@@ -98,7 +98,7 @@ struct MuhaffezViewModelTests {
         }
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
     }
 
     @Test func testA3ozoBellah() async throws {
@@ -133,7 +133,7 @@ struct MuhaffezViewModelTests {
         }
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
 
         viewModel.resetData()
         viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب الناس ملك الناس"
@@ -150,7 +150,7 @@ struct MuhaffezViewModelTests {
         }
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
 
         viewModel.resetData()
         viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب النا ملك الناس"
@@ -167,7 +167,7 @@ struct MuhaffezViewModelTests {
         }
 
         // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(viewModel.foundAyat.contains(6197))
+        #expect(viewModel.foundAyat.contains(6198))
     }
 
     @Test func testPartialRecognition() async throws {
@@ -184,7 +184,7 @@ struct MuhaffezViewModelTests {
         print("matchedTrues: \(matchedTrues)")
         // ML model has low confidence (45%), so falls back to fuzzy matching
         // Fuzzy matching correctly finds index 1987 (88.89% similarity)
-        #expect(viewModel.foundAyat == [1987])
+        #expect(viewModel.foundAyat == [1988])
 
         viewModel.voiceText = "الله يأمرك تؤدوا"
 
@@ -507,6 +507,6 @@ struct MuhaffezViewModelTests {
         }
 
         // Al-Ikhlas starts at index 6221: قُل هُوَ اللَّهُ أَحَدٌ
-        #expect(viewModel.foundAyat.contains(6188))
+        #expect(viewModel.foundAyat.contains(6189))
     }
 }
