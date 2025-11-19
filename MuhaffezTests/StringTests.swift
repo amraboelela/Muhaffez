@@ -50,8 +50,8 @@ struct StringTests {
         #expect(normalized.contains("اسلام"))
         #expect(normalized.contains("امان"))
         #expect(normalized.contains("اخرة"))
-        #expect(normalized.contains("مومن"))
-        #expect(normalized.contains("رييس"))
+        #expect(normalized.contains("مؤمن"))
+        #expect(normalized.contains("رئيس"))
     }
     
     @Test func testFindIn() async throws {

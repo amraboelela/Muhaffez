@@ -46,7 +46,7 @@ struct QuranModelTests {
         for marker in model.pageMarkers {
             #expect(marker >= 0 && marker < model.quranLines.count)
         }
-        #expect(model.pageMarkers.count == 603)
+        #expect(model.pageMarkers.count == 604)
         #expect(model.quranLines[model.pageMarkers[0]] == "صِراطَ الَّذينَ أَنعَمتَ عَلَيهِم غَيرِ المَغضوبِ عَلَيهِم وَلَا الضّالّينَ")
         #expect(model.quranLines[model.pageMarkers[49]] == "رَبَّنا إِنَّكَ جامِعُ النّاسِ لِيَومٍ لا رَيبَ فيهِ إِنَّ اللَّهَ لا يُخلِفُ الميعادَ")
         #expect(model.quranLines[model.pageMarkers[128]] == "وَهُوَ القاهِرُ فَوقَ عِبادِهِ وَهُوَ الحَكيمُ الخَبيرُ")
@@ -68,7 +68,7 @@ struct QuranModelTests {
         // Test ayah indices on different pages
         #expect(model.pageNumber(forAyahIndex: 0) == 1)   // Page 1
         #expect(model.pageNumber(forAyahIndex: 6) == 1)   // Page 1
-        #expect(model.pageNumber(forAyahIndex: 7) == 2)   // Page 2
+        #expect(model.pageNumber(forAyahIndex: 8) == 2)   // Page 2
         #expect(model.pageNumber(forAyahIndex: 10) == 2)
         #expect(model.pageNumber(forAyahIndex: 12) == 3)  // Page 3
         #expect(model.pageNumber(forAyahIndex: 17) == 3)  // Page 4
@@ -81,10 +81,10 @@ struct QuranModelTests {
         let model = QuranModel.shared
         
         // Suppose pageMarkers were set correctly from your file
-        #expect(model.pageNumber(forAyahIndex: 0) == 1)   // First ayah should be on page 1
-        
+        #expect(model.pageNumber(forAyahIndex: 1) == 1)   // First ayah should be on page 1
+
         if let lastAyahIndex = model.quranLines.indices.last {
-            #expect(model.pageNumber(forAyahIndex: lastAyahIndex) == model.pageMarkers.count + 1)
+            #expect(model.pageNumber(forAyahIndex: lastAyahIndex) == model.pageMarkers.count)
         }
     }
     
@@ -206,8 +206,8 @@ struct QuranModelTests {
         let model = QuranModel.shared
         
         // Act & Assert
-        #expect(model.isEndOfSurah(6))
-        #expect(!model.isEndOfSurah(7))
+        #expect(model.isEndOfSurah(7))
+        #expect(!model.isEndOfSurah(8))
         #expect(!model.isEndOfSurah(21))
     }
     

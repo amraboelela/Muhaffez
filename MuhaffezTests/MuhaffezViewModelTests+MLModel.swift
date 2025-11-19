@@ -45,7 +45,9 @@ struct MLModelTests {
         #expect(viewModel.foundAyat.count == 6)
 
         viewModel.voiceText = textToPredict
-        try? await Task.sleep(for: .seconds(2))
+        while viewModel.foundAyat.isEmpty {
+            try? await Task.sleep(for: .seconds(1))
+        }
         #expect(viewModel.foundAyat.first == 718)
         #expect(viewModel.foundAyat.count == 1)
     }
