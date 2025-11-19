@@ -377,12 +377,8 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
         seconds = int(epoch_time % 60)
         time_str = f'{minutes}m {seconds}s' if minutes > 0 else f'{seconds}s'
 
-        log_print(f'DEBUG: Epoch {epoch+1} completed training, calculating fast accuracy...', log_file)
-
         # Calculate fast accuracy every epoch (teacher forcing context)
         fast_accuracy = calculate_fast_accuracy(model, train_loader, device, idx_to_word)
-
-        log_print(f'DEBUG: Fast accuracy calculated: {fast_accuracy:.1f}%', log_file)
 
         # No autoregressive accuracy during training - only at the end
         accuracy = 0.0
@@ -400,7 +396,7 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
                 'epoch': epoch,
                 'vocab_size': model.vocab_size,
                 'loss': avg_loss,
-                'accuracy': 0.0,
+                'accuracy': fast_accuracy,  # Save fast accuracy instead of 0
             }, checkpoint_path)
 
         # Early stopping based on fast accuracy or LR minimum (removed autoregressive check)
@@ -429,6 +425,17 @@ def train_model(model, train_loader, combined_dataset, criterion, optimizer, sch
         final_accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
         log_print(f'✓ Final autoregressive accuracy: {final_accuracy:.1f}%', log_file)
         best_accuracy = final_accuracy
+
+        # Update checkpoint with final autoregressive accuracy
+        torch.save({
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'epoch': epoch,
+            'vocab_size': model.vocab_size,
+            'loss': best_loss,
+            'accuracy': final_accuracy,  # Replace fast accuracy with autoregressive
+        }, checkpoint_path)
+        log_print(f'✓ Checkpoint updated with final autoregressive accuracy', log_file)
 
     total_training_time = time.time() - total_start_time
     minutes = int(total_training_time // 60)

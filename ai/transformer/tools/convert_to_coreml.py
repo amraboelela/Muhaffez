@@ -92,18 +92,18 @@ def convert_model_to_coreml(pytorch_model_path, vocab_path, output_path):
 
     print(f"\nConverting to CoreML...")
 
-    # Convert to CoreML
+    # Convert to CoreML with flexible input shapes (3-50 sequence length)
     mlmodel = ct.convert(
         traced_model,
         inputs=[
             ct.TensorType(
                 name="input_ids",
-                shape=(1, max_length),
+                shape=ct.Shape(shape=(1, ct.RangeDim(3, 50))),
                 dtype=int
             ),
             ct.TensorType(
                 name="attention_mask",
-                shape=(1, max_length),
+                shape=ct.Shape(shape=(1, ct.RangeDim(3, 50))),
                 dtype=int
             )
         ],

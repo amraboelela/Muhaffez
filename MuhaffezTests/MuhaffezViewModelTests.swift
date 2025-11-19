@@ -64,8 +64,8 @@ struct MuhaffezViewModelTests {
         viewModel.voiceText = "بسم الله الرحمن الرحيم الحمد لله رب العالمين"
 
         #expect(viewModel.voiceTextHasBesmillah == true)
-        // Should find Al-Fatiha ayah 2 (index 1) after skipping Bismillah
-        #expect(viewModel.foundAyat.contains(1))
+        // Should find Al-Fatiha ayah 2 (index 2) after skipping Bismillah
+        #expect(viewModel.foundAyat.contains(2))
     }
 
     @Test func testBismillahAndAnNas() async throws {

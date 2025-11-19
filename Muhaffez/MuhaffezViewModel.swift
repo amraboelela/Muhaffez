@@ -136,34 +136,51 @@ class MuhaffezViewModel {
 
     // MARK: - Aya Matching
 
+    private func checkBismellah() {
+        foundAyat = []
+
+        // First pass: check if bismillah is present
+        if quranModel.bismellah.hasPrefix(textToPredict) || textToPredict.hasPrefix(quranModel.bismellah) {
+            print("findMatchingAyat, voiceTextHasBesmillah = true")
+            voiceTextHasBesmillah = true
+            // Remove bismillah from search text
+            textToPredict = textToPredict.removeBasmallah
+        }
+    }
+
+    // Find ayat matching the given text using prefix matching
+    private func findMatchingAyat() {
+        foundAyat = []
+
+        guard !textToPredict.isEmpty else {
+            return
+        }
+
+        // Second pass: find matching ayat with cleaned text
+        for (index, normLine) in quranModel.normalizedQuranLines.enumerated() {
+            if normLine.hasPrefix(textToPredict) || textToPredict.hasPrefix(normLine) {
+                //if index != 1 {  // Skip bismillah index
+                foundAyat.append(index)
+                //}
+            }
+        }
+    }
+
     private func updateFoundAyat() {
         print("updateFoundAyat")
         updatingFoundAyat = true
         debounceTimer?.invalidate()
         guard foundAyat.count != 1 else { return }
 
-        foundAyat.removeAll()
         print("updateFoundAyat textToPredict: \(textToPredict)")
         guard textToPredict.count > 10 else {
             print("updateFoundAyat normVoice.count <= 10")
             return
         }
+
         // Fast prefix check
-        for (index, line) in quranLines.enumerated() {
-            let normLine = line.normalizedArabic
-            if normLine.hasPrefix(textToPredict) ||
-                textToPredict.hasPrefix(normLine) {
-                if index == 0 {
-                    print("updateFoundAyat, voiceTextHasBesmillah = true")
-                    voiceTextHasBesmillah = true
-                    if textToPredict.isEmpty {
-                        return
-                    }
-                } else {
-                    foundAyat.append(index)
-                }
-            }
-        }
+        checkBismellah()
+        findMatchingAyat()
 
         print("updateFoundAyat foundAyat: \(foundAyat)")
         if !foundAyat.isEmpty {
@@ -188,57 +205,56 @@ class MuhaffezViewModel {
         updatingFoundAyat = false
     }
 
-    // Returns ayah index using transformer model prediction + prefix matching
-    func tryMLModelMatch() -> Int? {
+    // Uses transformer model prediction + prefix matching to update foundAyat
+    func tryMLModelMatch() {
         print("tryMLModelMatch")
-        guard let predictedText = mlModel.predict(text: textToPredict) else {
-            print("ML Model prediction failed")
-            return nil
-        }
 
+        // Cap input to first 6 words to match model's training expectations
+        let inputWords = textToPredict.normalizedArabic.split(separator: " ").map { String($0) }
+        let cappedWords = inputWords.prefix(6)
+        let cappedText = cappedWords.joined(separator: " ")
+
+        guard let predictedText = mlModel.predict(text: cappedText) else {
+            print("ML Model prediction failed")
+            return
+        }
         print("ML Model predicted text: \(predictedText)")
+        textToPredict = predictedText
+        checkBismellah()
 
         // Use the predicted text to find matching ayat using prefix matching
-        // Normalize the predicted text
-        let normPredicted = predictedText.normalizedArabic
-
-        guard !normPredicted.isEmpty else {
+        // Predicted text is already normalized
+        guard !textToPredict.isEmpty else {
             print("Predicted text is empty")
-            return nil
+            return
         }
 
-        // Find ayat that match the predicted prefix
-        var matchedAyat: [(index: Int, similarity: Double)] = []
+        // Try matching with full prediction first, then progressively trim words from the end
+        // Stop when we have at least 3 words or find a match
+        let predictedWords = textToPredict.split(separator: " ").map { String($0) }
+        let minWords = 3
 
-        for (index, line) in quranLines.enumerated() {
-            let normLine = line.normalizedArabic
+        for wordCount in stride(from: predictedWords.count, through: minWords, by: -1) {
+            let trimmedWords = predictedWords.prefix(wordCount)
+            let trimmedText = trimmedWords.joined(separator: " ")
 
-            // Check if predicted text is prefix of ayah or vice versa
-            if normLine.hasPrefix(normPredicted) || normPredicted.hasPrefix(normLine) {
-                // Calculate similarity for ranking
-                let similarity = normPredicted.similarity(to: String(normLine.prefix(normPredicted.count)))
-                matchedAyat.append((index, similarity))
+            print("#coreml Trying with \(wordCount) words: \(trimmedText)")
+
+            // Find ayat that match the trimmed prefix
+            textToPredict = trimmedText
+            findMatchingAyat()
+
+            // If we found matches, return
+            if !foundAyat.isEmpty {
+                print("#coreml Found \(foundAyat.count) match(es) with \(wordCount) words")
+                print("#coreml   Updated foundAyat with \(foundAyat.count) matches")
+                return
             }
+
+            print("#coreml No matches found with \(wordCount) words, trying with fewer words...")
         }
 
-        // Sort by similarity descending
-        matchedAyat.sort { $0.similarity > $1.similarity }
-
-        if let bestMatch = matchedAyat.first {
-            print("#coreml Best match: [\(bestMatch.index)] with \(String(format: "%.2f", bestMatch.similarity)) similarity")
-            print("#coreml   Predicted: \(predictedText)")
-            print("#coreml   Ayah: \(quranLines[bestMatch.index])")
-
-            if bestMatch.similarity >= 0.7 {
-                return bestMatch.index
-            } else {
-                print("#coreml Best match rejected - similarity too low: \(String(format: "%.2f", bestMatch.similarity))")
-                return nil
-            }
-        }
-
-        print("#coreml No matches found for predicted text")
-        return nil
+        print("#coreml No matches found after trying all word counts")
     }
 
     private func performFallbackMatch() {
@@ -247,31 +263,26 @@ class MuhaffezViewModel {
         }
         print("performFallbackMatch textToPredict: \(textToPredict)")
 
-        // Use ML model for prediction - pass original voiceText, not normalized
-        if let ayahIndex = tryMLModelMatch() {
-            // Strip bismillah if flag is set
-            if ayahIndex == 0 {
-                print("performFallbackMatch, voiceTextHasBesmillah = true")
-                voiceTextHasBesmillah = true
-                performFallbackMatch()
-                return
-            }
-            print("#coreml ML prediction accepted")
-            foundAyat = [ayahIndex]
+        // Use ML model for prediction
+        tryMLModelMatch()
+
+        // If ML model found exactly one match, use it
+        if foundAyat.count == 1 {
+            print("#coreml ML prediction accepted, foundAyat: \(foundAyat)")
             updateQuranText()
             updateMatchedWords()
             return
         }
 
-        print("#coreml ML model failed or had low similarity score")
+        print("#coreml ML model failed, falling back to similarity matching")
 
-        // If ML model fails or validation fails, fall back to similarity matching
+        updateTextToPredict()
+
+        // If ML model fails, fall back to similarity matching
         var bestIndex: Int?
         var bestScore = 0.0
 
-        for (index, line) in quranLines.enumerated() {
-            let ayahNorm = line.normalizedArabic
-
+        for (index, ayahNorm) in quranModel.normalizedQuranLines.enumerated() {
             let ayahPrefix = String(ayahNorm.prefix(textToPredict.count))
             let textPrefix = String(textToPredict.prefix(ayahPrefix.count))
             let similarity = textPrefix.similarity(to: ayahPrefix)
@@ -281,7 +292,7 @@ class MuhaffezViewModel {
                 bestIndex = index
             }
             if similarity > 0.9 {
-                print("Early break at index \(index): \(line)")
+                print("Early break at index \(index): \(quranLines[index])")
                 print("  similarity: \(String(format: "%.2f", similarity))")
                 break
             }

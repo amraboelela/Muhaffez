@@ -113,3 +113,4 @@ QuranModel provides:
 - from now on, do not run the train.sh let me do that for you
 - never run python3 train.py 2>&1 | head -50 by yourself!
 - Do not read the whole vocabulary.json file, just read its head
+- do not run the unit testing by yourself.

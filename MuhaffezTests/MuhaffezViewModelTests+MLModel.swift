@@ -14,109 +14,106 @@ struct MLModelTests {
     @Test func testAlFatiha() async throws {
         let viewModel = MuhaffezViewModel()
         // Pass raw text (with tashkeel) as the model was trained on raw text
-        viewModel.voiceText = "بسم الله الرحمن الرحيم"
+        viewModel.textToPredict = "بسم الله الرحمن الرحيم"
 
-        let index = viewModel.tryMLModelMatch()
+        viewModel.tryMLModelMatch()
 
-        // Should return index 0 (Al-Fatiha first ayah)
-        #expect(index == nil)
+        #expect(viewModel.foundAyat.isEmpty)
+        // Should detect bismillah and set voiceTextHasBesmillah
+        #expect(viewModel.voiceTextHasBesmillah == true)
     }
 
     @Test func testAnNas() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "قل اعوذ برب الناس"
+        viewModel.textToPredict = "قل اعوذ برب الناس"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Should return index 6197 (first ayah of Surat An-Nas)
-        #expect(index == 6197)  // First ayah of An-Nas
+        // Should update foundAyat with index 6198 (An-Nas)
+        #expect(viewModel.foundAyat.contains(6198))
+        #expect(viewModel.foundAyat.count == 1)
     }
 
     @Test func testAlMaidah51() async throws {
         let viewModel = MuhaffezViewModel()
         // Missing first word "يا" - tests model's robustness to partial input
-        viewModel.voiceText = "أَيُّهَا الَّذينَ آمَنوا لا تَتَّخِذُوا اليَهودَ وَالنَّصارىٰ أَولِياءَ بَعضُهُم أَولِياءُ بَعضٍ"
+        let textToPredict = "أَيُّهَا الَّذينَ آمَنوا لا تَتَّخِذُوا اليَهودَ وَالنَّصارىٰ أَولِياءَ بَعضُهُم أَولِياءُ بَعضٍ"
+        viewModel.textToPredict = textToPredict
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
+        // Should update foundAyat with index 409 (first match)
+        #expect(viewModel.foundAyat.first == 409)
+        #expect(viewModel.foundAyat.count == 6)
 
-        // Should return index 717 (Al-Ma'idah:51)
-        #expect(index == 717)  // Al-Ma'idah:51
+        viewModel.voiceText = textToPredict
+        try? await Task.sleep(for: .seconds(2))
+        #expect(viewModel.foundAyat.first == 718)
+        #expect(viewModel.foundAyat.count == 1)
     }
 
     @Test func testAyatAlKursi() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "الله لا اله الا هو الحي القيوم"
+        viewModel.textToPredict = "الله لا اله الا هو الحي القيوم"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Should return a valid ayah index
-        #expect(index != nil)
-        if let index {
-            #expect(index >= 0 && index < 6203)
-        }
+        #expect(viewModel.foundAyat.first == 261)
+        #expect(viewModel.foundAyat.count == 1)
     }
 
     @Test func testPartialAyah() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "الحمد لله رب"
+        viewModel.textToPredict = "الحمد لله رب"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Should return index 1 (Al-Fatiha second ayah) or close
-        #expect(index == 1)  // Should be in early ayat
+        #expect(viewModel.foundAyat.first == 2)
+        #expect(viewModel.foundAyat.count == 1)
     }
 
     @Test func testNonQuranicText() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "hello world this is not arabic"
+        viewModel.textToPredict = "hello world this is not arabic"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Neural network will return nil if similarity is too low
-        // This is expected behavior - validation happens within ML matching
-        #expect(index == nil)
+        // Neural network will not find matches for non-Quranic text
+        #expect(viewModel.foundAyat.isEmpty)
     }
 
     @Test func testDistortedText() async throws {
         let viewModel = MuhaffezViewModel()
         // Distorted version of "بسم الله الرحمن الرحيم"
-        viewModel.voiceText = "بسم اله الرحمن الرحم"
+        viewModel.textToPredict = "بسم اله الرحمن الرحم"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Should still find Al-Fatiha (trained with distortions)
-        #expect(index == 0)  // Should be in early ayat
+        #expect(viewModel.foundAyat.isEmpty)
+        #expect(viewModel.voiceTextHasBesmillah)
     }
 
     @Test func testOffsetText() async throws {
         let viewModel = MuhaffezViewModel()
         // Test with partial ayah (last part of Al-Fatiha first ayah)
-        viewModel.voiceText = "الرحمن الرحيم"
+        viewModel.textToPredict = "الرحمن الرحيم"
+        viewModel.tryMLModelMatch()
 
-        let index = viewModel.tryMLModelMatch()
-
-        // Model may not find exact match since this is just a fragment
-        // Just verify it returns a valid index
-        #expect(index == 2)
+        #expect(viewModel.foundAyat.first == 3)
+        #expect(viewModel.foundAyat.count == 1)
     }
 
     @Test func testEmptyString() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = ""
+        viewModel.textToPredict = ""
 
-        let index = viewModel.tryMLModelMatch()
+        viewModel.tryMLModelMatch()
 
-        // Empty string results in empty normalized text, so we return nil
-        #expect(index == nil)
+        // Empty string results in empty normalized text, so foundAyat remains empty
+        #expect(viewModel.foundAyat.isEmpty)
     }
 
     @Test func testLongInput() async throws {
         let viewModel = MuhaffezViewModel()
-        viewModel.voiceText = "ان الله يامركم ان تؤدوا الامانات الى اهلها واذا حكمتم بين الناس ان تحكموا بالعدل"
+        viewModel.textToPredict = "ان الله يامركم ان تؤدوا الامانات الى اهلها واذا حكمتم بين الناس ان تحكموا بالعدل"
 
-        let index = viewModel.tryMLModelMatch()
+        viewModel.tryMLModelMatch()
 
-        // Should truncate to 70 chars and still find match
-        #expect(index == 548)
+        #expect(viewModel.foundAyat.first == 549)
+        #expect(viewModel.foundAyat.count == 1)
     }
 }

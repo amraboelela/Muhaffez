@@ -337,7 +337,7 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
                 'epoch': epoch,
                 'vocab_size': vocab_size,
                 'loss': avg_loss,
-                'accuracy': 0.0,
+                'accuracy': fast_accuracy,  # Save fast accuracy instead of 0
             }, checkpoint_path)
 
         # Early stopping based on LR minimum (no autoregressive check during training)
@@ -356,6 +356,17 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, device, id
         final_accuracy = calculate_accuracy(model, train_loader, device, idx_to_word)
         print(f'✓ Final autoregressive accuracy: {final_accuracy:.1f}%', flush=True)
         best_accuracy = final_accuracy
+
+        # Update checkpoint with final autoregressive accuracy
+        torch.save({
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'epoch': epoch,
+            'vocab_size': vocab_size,
+            'loss': best_loss,
+            'accuracy': final_accuracy,  # Replace fast accuracy with autoregressive
+        }, checkpoint_path)
+        print(f'✓ Checkpoint updated with final autoregressive accuracy', flush=True)
 
     total_training_time = time.time() - total_start_time
     minutes = int(total_training_time // 60)
