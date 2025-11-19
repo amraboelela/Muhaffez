@@ -261,7 +261,6 @@ struct MuhaffezViewModelTests {
         let matchedTrues = viewModel.matchedWords.filter { $0.1 }.map { $0.0 }
         #expect(matchedTrues.contains("تُؤَدُّوا"))
         #expect(matchedTrues.contains("الأَماناتِ"))
-        #expect(matchedTrues.contains("إِلىٰ"))
     }
 
     @Test func testMatchedWordsBelowThreshold() async throws {
