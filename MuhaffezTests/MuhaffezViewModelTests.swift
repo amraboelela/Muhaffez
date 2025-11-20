@@ -111,6 +111,18 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.foundAyat.isEmpty)
     }
 
+    @Test func testA3ozoBellahWithMistake() async throws {
+        let viewModel = MuhaffezViewModel()
+
+        // Test with mistake
+        viewModel.voiceText = "اعوذ بالله من شيطان الرجيم"
+
+        // Should still detect it as A3ozoBellah due to fuzzy matching
+        #expect(viewModel.voiceTextHasA3ozoBellah == true)
+        #expect(viewModel.voiceTextHasBesmillah == false)
+        #expect(viewModel.foundAyat.isEmpty)
+    }
+
     @Test func testA3ozoBellahAndBismillahAndAnNas() async throws {
         let viewModel = MuhaffezViewModel()
         viewModel.voiceText = "أعوذ بالله من الشيطان الرجيم بسم الله الرحمن الرحيم قل اعوذ برب الناس"

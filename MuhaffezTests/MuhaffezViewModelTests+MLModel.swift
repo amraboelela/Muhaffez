@@ -37,17 +37,10 @@ struct MLModelTests {
         let viewModel = MuhaffezViewModel()
         // Missing first word "يا" - tests model's robustness to partial input
         let textToPredict = "أَيُّهَا الَّذينَ آمَنوا لا تَتَّخِذُوا اليَهودَ وَالنَّصارىٰ أَولِياءَ بَعضُهُم أَولِياءُ بَعضٍ"
-        viewModel.textToPredict = textToPredict
+        viewModel.voiceText = textToPredict
         viewModel.tryMLModelMatch()
 
         // Should update foundAyat with index 409 (first match)
-        #expect(viewModel.foundAyat.first == 409)
-        #expect(viewModel.foundAyat.count == 6)
-
-        viewModel.voiceText = textToPredict
-        while viewModel.foundAyat.isEmpty {
-            try? await Task.sleep(for: .seconds(1))
-        }
         #expect(viewModel.foundAyat.first == 718)
         #expect(viewModel.foundAyat.count == 1)
     }

@@ -14,6 +14,7 @@ class QuranModel {
     let quranLines: [String]
     let normalizedQuranLines: [String]
     let bismellah: String
+    let a3ozoBellah: String
     let pageMarkers: [Int]
     let rub3Markers: [Int]
     let surahMarkers: [Int]
@@ -165,6 +166,7 @@ class QuranModel {
 
         self.quranLines = lines
         self.normalizedQuranLines = lines.map { $0.normalizedArabic }
+        self.a3ozoBellah = normalizedQuranLines[0]
         self.bismellah = normalizedQuranLines[1]
         self.pageMarkers = pageMarkers
         self.rub3Markers = rub3Markers

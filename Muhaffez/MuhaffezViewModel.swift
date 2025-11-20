@@ -18,13 +18,7 @@ class MuhaffezViewModel {
         didSet {
             textToPredict = voiceText.normalizedArabic
             updateTextToPredict()
-
-            // Check for A3ozoBellah
-            if !voiceTextHasA3ozoBellah && voiceText.hasA3ozoBellah {
-                print("voiceText didSet, voiceTextHasA3ozoBellah = true")
-                voiceTextHasA3ozoBellah = true
-            }
-
+            checkA3ozoBellah()
             if !voiceText.isEmpty {
                 if foundAyat.count == 1 {
                     if !updatingFoundAyat {
@@ -151,7 +145,28 @@ class MuhaffezViewModel {
 
     // MARK: - Aya Matching
 
+    private func checkA3ozoBellah() {
+        guard !textToPredict.isEmpty else {
+            return
+        }
+        // Check if a3ozoBellah is present (with fuzzy matching for mistakes)
+        if quranModel.a3ozoBellah.hasPrefix(textToPredict) || textToPredict.hasPrefix(quranModel.a3ozoBellah) {
+            print("checkA3ozoBellah, voiceTextHasA3ozoBellah = true")
+            voiceTextHasA3ozoBellah = true
+        } else {
+            // Try fuzzy matching for common mistakes
+            let similarity = textToPredict.similarity(to: quranModel.a3ozoBellah)
+            if similarity >= 0.7 {
+                print("checkA3ozoBellah, fuzzy match with similarity: \(similarity)")
+                voiceTextHasA3ozoBellah = true
+            }
+        }
+    }
+
     private func checkBismellah() {
+        guard !textToPredict.isEmpty else {
+            return
+        }
         foundAyat = []
 
         // First pass: check if bismillah is present
@@ -192,6 +207,7 @@ class MuhaffezViewModel {
         }
 
         // Fast prefix check
+        checkA3ozoBellah()
         checkBismellah()
         findMatchingAyat()
 
@@ -262,6 +278,7 @@ class MuhaffezViewModel {
         }
         print("ML Model predicted text: \(predictedText)")
         textToPredict = predictedText
+        checkA3ozoBellah()
         checkBismellah()
 
         // Use the predicted text to find matching ayat using prefix matching
