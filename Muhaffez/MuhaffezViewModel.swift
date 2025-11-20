@@ -211,7 +211,6 @@ class MuhaffezViewModel {
         checkBismellah()
         findMatchingAyat()
 
-        //print("updateFoundAyat foundAyat: \(foundAyat)")
         if !foundAyat.isEmpty {
             for ayahIndex in foundAyat {
                 print("  Found ayah [\(ayahIndex)]: \(quranLines[ayahIndex])")
@@ -227,8 +226,6 @@ class MuhaffezViewModel {
             }
             return
         }
-
-        print("updateFoundAyat foundAyat 2: \(foundAyat)")
         updateQuranText()
         updateMatchedWords()
         updatingFoundAyat = false
@@ -332,13 +329,9 @@ class MuhaffezViewModel {
             print("#coreml ML prediction got one ayah: \(foundAyat)")
             updateQuranText()
             updateMatchedWords()
-        } else {
-            print("#coreml ML model failed, falling back to similarity matching")
-        }
-        guard foundAyat.count == 0 || foundAyat.count == 1 else {
-            print("foundAyat.count > 1, returing and to let the user say more words")
             return
         }
+        print("#coreml ML model failed, falling back to similarity matching")
         print("Starting similarity matching")
         updateTextToPredict()
 

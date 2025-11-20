@@ -484,4 +484,34 @@ struct MuhaffezViewModelTests {
         // Al-Ikhlas starts at index 6221: قُل هُوَ اللَّهُ أَحَدٌ
         #expect(viewModel.foundAyat.contains(6189))
     }
+
+    @Test func testPartialAyahWithMistake() async throws {
+        let viewModel = MuhaffezViewModel()
+        // Partial ayah without tashkeel - appears to be incomplete/partial text
+        viewModel.voiceText = "هدوا فى الله حق جهاده"
+
+        while viewModel.foundAyat.isEmpty {
+            try? await Task.sleep(for: .seconds(1))
+        }
+
+        print("Found ayat: \(viewModel.foundAyat)")
+        if !viewModel.foundAyat.isEmpty {
+            print("Found ayah text: \(quranLines[viewModel.foundAyat.first!])")
+        }
+        #expect(viewModel.foundAyat.contains(2663))
+        #expect(viewModel.foundAyat.count == 1)
+
+        viewModel.resetData()
+        viewModel.voiceText = "وجاهدوا في الله حق جهاده"
+        #expect(viewModel.foundAyat.contains(2663))
+        #expect(viewModel.foundAyat.count == 1)
+
+        viewModel.resetData()
+        viewModel.voiceText = "وجاهدو في الله حق جهاده"
+        while viewModel.foundAyat.isEmpty {
+            try? await Task.sleep(for: .seconds(1))
+        }
+        #expect(viewModel.foundAyat.contains(2663))
+        #expect(viewModel.foundAyat.count == 1)
+    }
 }
