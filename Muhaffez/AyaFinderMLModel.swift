@@ -101,7 +101,6 @@ class AyaFinderMLModel {
         sequenceTokens.append(ayahToken)
 
         let actualInputTokens = sequenceTokens.count - 3  // Subtract <s>, القاريء:, الاية:
-        print("Initial sequence length: \(sequenceTokens.count) (before generation)")
         print("Input tokens added: \(actualInputTokens) (skipped \(skippedWords) OOV words)")
 
         // If we have less than 3 input words in vocabulary, return nil

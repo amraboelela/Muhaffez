@@ -61,7 +61,7 @@ class MuhaffezViewModel {
             text = text.removeBasmallah
         }
         textToPredict = text
-        print("updateTextToPredict textToPredict: \(textToPredict)")
+        //print("updateTextToPredict textToPredict: \(textToPredict)")
     }
 
     var isRecording = false
@@ -134,6 +134,21 @@ class MuhaffezViewModel {
         updatingFoundAyat = false
     }
 
+    func resetPages() {
+        debounceTimer?.invalidate()
+        quranText = ""
+        matchedWords = []
+        currentPageIsRight = true
+        tempPage.reset()
+        tempPage.isFirstPage = true
+        rightPage.reset()
+        leftPage.reset()
+        pageCurrentLineIndex = 0
+        pageMatchedWordsIndex = 0
+        previousVoiceWordsCount = 0
+        updatingFoundAyat = false
+    }
+
     // MARK: - Aya Matching
 
     private func checkBismellah() {
@@ -159,9 +174,7 @@ class MuhaffezViewModel {
         // Second pass: find matching ayat with cleaned text
         for (index, normLine) in quranModel.normalizedQuranLines.enumerated() {
             if normLine.hasPrefix(textToPredict) || textToPredict.hasPrefix(normLine) {
-                //if index != 1 {  // Skip bismillah index
                 foundAyat.append(index)
-                //}
             }
         }
     }
@@ -172,7 +185,7 @@ class MuhaffezViewModel {
         debounceTimer?.invalidate()
         guard foundAyat.count != 1 else { return }
 
-        print("updateFoundAyat textToPredict: \(textToPredict)")
+        //print("updateFoundAyat textToPredict: \(textToPredict)")
         guard textToPredict.count > 10 else {
             print("updateFoundAyat normVoice.count <= 10")
             return
@@ -182,7 +195,7 @@ class MuhaffezViewModel {
         checkBismellah()
         findMatchingAyat()
 
-        print("updateFoundAyat foundAyat: \(foundAyat)")
+        //print("updateFoundAyat foundAyat: \(foundAyat)")
         if !foundAyat.isEmpty {
             for ayahIndex in foundAyat {
                 print("  Found ayah [\(ayahIndex)]: \(quranLines[ayahIndex])")
@@ -203,6 +216,35 @@ class MuhaffezViewModel {
         updateQuranText()
         updateMatchedWords()
         updatingFoundAyat = false
+    }
+
+    func checkCoreMLResults() {
+        print("checkCoreMLResults")
+        guard !foundAyat.isEmpty else {
+            print("checkCoreMLResults, foundAyat.isEmpty, returning")
+            return
+        }
+        var bestMatch: (index: Int, similarity: Double) = (foundAyat.first!, 0.0)
+        updateTextToPredict()
+
+        for index in foundAyat {
+            let ayahNorm = quranLines[index].normalizedArabic
+            let ayahPrefix = String(ayahNorm.prefix(textToPredict.count))
+            let textPrefix = String(textToPredict.prefix(ayahPrefix.count))
+            let similarity = textPrefix.similarity(to: ayahPrefix)
+
+            if similarity > bestMatch.similarity {
+                bestMatch = (index, similarity)
+            }
+        }
+
+        print("#coreml Best match: [\(bestMatch.index)] with \(String(format: "%.2f", bestMatch.similarity)) similarity - \(QuranModel.shared.quranLines[bestMatch.index])")
+        if bestMatch.similarity >= 0.7 {
+            foundAyat = [bestMatch.index]
+        } else {
+            foundAyat = []
+            print("#coreml Best match rejected - similarity too low: \(String(format: "%.2f", bestMatch.similarity))")
+        }
     }
 
     // Uses transformer model prediction + prefix matching to update foundAyat
@@ -247,13 +289,15 @@ class MuhaffezViewModel {
             // If we found matches, return
             if !foundAyat.isEmpty {
                 print("#coreml Found \(foundAyat.count) match(es) with \(wordCount) words")
-                print("#coreml   Updated foundAyat with \(foundAyat.count) matches")
+                print("#coreml Updated foundAyat with \(foundAyat.count) matches")
+                for ayahIndex in foundAyat {
+                    print("#coreml found ayah [\(ayahIndex)]: \(quranLines[ayahIndex])")
+                }
+                checkCoreMLResults()
                 return
             }
-
             print("#coreml No matches found with \(wordCount) words, trying with fewer words...")
         }
-
         print("#coreml No matches found after trying all word counts")
     }
 
@@ -268,14 +312,17 @@ class MuhaffezViewModel {
 
         // If ML model found exactly one match, use it
         if foundAyat.count == 1 {
-            print("#coreml ML prediction accepted, foundAyat: \(foundAyat)")
+            print("#coreml ML prediction got one ayah: \(foundAyat)")
             updateQuranText()
             updateMatchedWords()
+        } else {
+            print("#coreml ML model failed, falling back to similarity matching")
+        }
+        guard foundAyat.count == 0 || foundAyat.count == 1 else {
+            print("foundAyat.count > 1, returing and to let the user say more words")
             return
         }
-
-        print("#coreml ML model failed, falling back to similarity matching")
-
+        print("Starting similarity matching")
         updateTextToPredict()
 
         // If ML model fails, fall back to similarity matching
@@ -301,6 +348,11 @@ class MuhaffezViewModel {
         if let bestIndex, bestIndex > 0 {
             print("performFallbackMatch bestIndex: \(bestIndex)")
             print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
+            if !foundAyat.isEmpty && bestIndex == foundAyat.first {
+                print("Similarity match found the same ayah")
+                return
+            }
+            self.resetPages()
             foundAyat = [bestIndex]
             updateQuranText()
             updateMatchedWords()
