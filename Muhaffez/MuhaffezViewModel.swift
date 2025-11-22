@@ -123,8 +123,8 @@ class MuhaffezViewModel {
         pageCurrentLineIndex = 0
         pageMatchedWordsIndex = 0
         previousVoiceWordsCount = 0
-        voiceTextHasBesmillah = false
         voiceTextHasA3ozoBellah = false
+        voiceTextHasBesmillah = false
         updatingFoundAyat = false
     }
 
@@ -146,7 +146,7 @@ class MuhaffezViewModel {
     // MARK: - Aya Matching
 
     private func checkA3ozoBellah() {
-        guard !textToPredict.isEmpty else {
+        guard !textToPredict.isEmpty && !voiceTextHasA3ozoBellah else {
             return
         }
         // Check if a3ozoBellah is present (with fuzzy matching for mistakes)
@@ -164,7 +164,7 @@ class MuhaffezViewModel {
     }
 
     private func checkBismellah() {
-        guard !textToPredict.isEmpty else {
+        guard !textToPredict.isEmpty && !voiceTextHasBesmillah else {
             return
         }
         foundAyat = []
@@ -174,7 +174,7 @@ class MuhaffezViewModel {
             print("findMatchingAyat, voiceTextHasBesmillah = true")
             voiceTextHasBesmillah = true
             // Remove bismillah from search text
-            textToPredict = textToPredict.removeBasmallah
+            //textToPredict = textToPredict.removeBasmallah
         }
     }
 
@@ -195,20 +195,22 @@ class MuhaffezViewModel {
     }
 
     private func updateFoundAyat() {
-        print("updateFoundAyat")
+        //print("updateFoundAyat")
         updatingFoundAyat = true
         debounceTimer?.invalidate()
         guard foundAyat.count != 1 else { return }
 
+        checkA3ozoBellah()
+        checkBismellah()
+
         //print("updateFoundAyat textToPredict: \(textToPredict)")
         guard textToPredict.count > 10 else {
             print("updateFoundAyat normVoice.count <= 10")
+            foundAyat = []
             return
         }
 
         // Fast prefix check
-        checkA3ozoBellah()
-        checkBismellah()
         findMatchingAyat()
 
         if !foundAyat.isEmpty {
@@ -271,6 +273,7 @@ class MuhaffezViewModel {
 
         guard let predictedText = mlModel.predict(text: cappedText) else {
             print("ML Model prediction failed")
+            foundAyat = []
             return
         }
         print("ML Model predicted text: \(predictedText)")
@@ -327,11 +330,21 @@ class MuhaffezViewModel {
         // If ML model found exactly one match, use it
         if foundAyat.count == 1 {
             print("#coreml ML prediction got one ayah: \(foundAyat)")
+            if let first = foundAyat.first, first == 0 {
+                voiceTextHasA3ozoBellah = true
+                foundAyat = []
+                return
+            }
+            if let first = foundAyat.first, first == 1 {
+                voiceTextHasBesmillah = true
+                foundAyat = []
+                return
+            }
             updateQuranText()
             updateMatchedWords()
-            return
+            //return
         }
-        print("#coreml ML model failed, falling back to similarity matching")
+        //print("#coreml ML model failed, falling back to similarity matching")
         print("Starting similarity matching")
         updateTextToPredict()
 
@@ -358,7 +371,7 @@ class MuhaffezViewModel {
         if let bestIndex, bestIndex > 0 {
             print("performFallbackMatch bestIndex: \(bestIndex)")
             print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
-            if !foundAyat.isEmpty && bestIndex == foundAyat.first {
+            if bestIndex == foundAyat.first {
                 print("Similarity match found the same ayah")
                 return
             }

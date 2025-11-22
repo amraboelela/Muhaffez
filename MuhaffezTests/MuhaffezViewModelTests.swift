@@ -514,4 +514,15 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.foundAyat.contains(2663))
         #expect(viewModel.foundAyat.count == 1)
     }
+
+    @Test func testIbrahimAyahPartialMatch() async throws {
+        let viewModel = MuhaffezViewModel()
+        viewModel.voiceText = "واذ قال ابراهيم بهذ"
+
+        while viewModel.foundAyat.isEmpty {
+            try? await Task.sleep(for: .seconds(1))
+        }
+        #expect(viewModel.foundAyat.contains(132))
+        #expect(viewModel.foundAyat.count == 1)
+    }
 }
