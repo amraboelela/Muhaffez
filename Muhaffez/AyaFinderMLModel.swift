@@ -85,12 +85,16 @@ class AyaFinderMLModel {
         var sequenceTokens = [bosToken, readerToken]
 
         // Add input word tokens (limit to first 6 words to leave room for output)
-        let maxInputWords = min(inputWords.count, 6)
+        //let maxInputWords = min(inputWords.count, 6)
         var skippedWords = 0
-        for i in 0..<maxInputWords {
+        for i in 0..<inputWords.count {
             let word = inputWords[i]
             if let token = wordToIdx[word] {
                 sequenceTokens.append(token)
+                if sequenceTokens.count >= 8 { // 2 control tokens + 6 max word tokens
+                    print("sequenceTokens.count >= 8, sequenceTokens: \(sequenceTokens)")
+                    break
+                }
             } else {
                 print("Warning: word '\(word)' not in vocabulary, skipping")
                 skippedWords += 1
@@ -99,7 +103,7 @@ class AyaFinderMLModel {
 
         // Add ayah marker
         sequenceTokens.append(ayahToken)
-
+        print("sequenceTokens.append(ayahToken), sequenceTokens: \(sequenceTokens)")
         let actualInputTokens = sequenceTokens.count - 3  // Subtract <s>, القاريء:, الاية:
         print("Input tokens added: \(actualInputTokens) (skipped \(skippedWords) OOV words)")
 

@@ -221,6 +221,7 @@ class MuhaffezViewModel {
         // Fallback with debounce if no matches
         if foundAyat.isEmpty || textToPredict.count < 17 {
             print("foundAyat.isEmpty || textToPredict.count < 17, Timer.scheduledTimer(withTimeInterval: 1.0")
+            debounceTimer?.invalidate()
             debounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.performFallbackMatch()
@@ -254,7 +255,7 @@ class MuhaffezViewModel {
         }
 
         print("#coreml Best match: [\(bestMatch.index)] with \(String(format: "%.2f", bestMatch.similarity)) similarity - \(QuranModel.shared.quranLines[bestMatch.index])")
-        if bestMatch.similarity >= 0.7 {
+        if bestMatch.similarity >= 0.6 {
             foundAyat = [bestMatch.index]
         } else {
             foundAyat = []
@@ -267,11 +268,8 @@ class MuhaffezViewModel {
         print("tryMLModelMatch")
 
         // Cap input to first 6 words to match model's training expectations
-        let inputWords = textToPredict.normalizedArabic.split(separator: " ").map { String($0) }
-        let cappedWords = inputWords.prefix(6)
-        let cappedText = cappedWords.joined(separator: " ")
-
-        guard let predictedText = mlModel.predict(text: cappedText) else {
+        let inputWords = textToPredict.normalizedArabic
+        guard let predictedText = mlModel.predict(text: inputWords) else {
             print("ML Model prediction failed")
             foundAyat = []
             return
@@ -319,40 +317,56 @@ class MuhaffezViewModel {
     }
 
     private func performFallbackMatch() {
-        defer {
-            updatingFoundAyat = false
-        }
+//        defer {
+//            updatingFoundAyat = false
+//            print("updatingFoundAyat = false")
+//        }
         print("performFallbackMatch textToPredict: \(textToPredict)")
 
         // Use ML model for prediction
         tryMLModelMatch()
 
-        // If ML model found exactly one match, use it
         if foundAyat.count == 1 {
             print("#coreml ML prediction got one ayah: \(foundAyat)")
             if let first = foundAyat.first, first == 0 {
                 voiceTextHasA3ozoBellah = true
                 foundAyat = []
+                updatingFoundAyat = false
                 return
             }
             if let first = foundAyat.first, first == 1 {
                 voiceTextHasBesmillah = true
                 foundAyat = []
+                updatingFoundAyat = false
                 return
             }
             updateQuranText()
             updateMatchedWords()
-            //return
+            updatingFoundAyat = false
+            return
         }
         //print("#coreml ML model failed, falling back to similarity matching")
         print("Starting similarity matching")
         updateTextToPredict()
 
-        // If ML model fails, fall back to similarity matching
+        // Use background similarity matching
+        Task.detached { [weak self] in
+            await self?.performSimilarityMatching()
+        }
+    }
+
+    private func performSimilarityMatching() async {
+        // Capture values we need on main thread
+        let textToPredict = self.textToPredict
+        let normalizedQuranLines = quranModel.normalizedQuranLines
+        let quranLines = self.quranLines
+        let currentFoundAyat = self.foundAyat
+
+        // Perform expensive computation on background thread
         var bestIndex: Int?
         var bestScore = 0.0
 
-        for (index, ayahNorm) in quranModel.normalizedQuranLines.enumerated() {
+        for (index, ayahNorm) in normalizedQuranLines.enumerated() {
             let ayahPrefix = String(ayahNorm.prefix(textToPredict.count))
             let textPrefix = String(textToPredict.prefix(ayahPrefix.count))
             let similarity = textPrefix.similarity(to: ayahPrefix)
@@ -368,17 +382,21 @@ class MuhaffezViewModel {
             }
         }
 
-        if let bestIndex, bestIndex > 0 {
-            print("performFallbackMatch bestIndex: \(bestIndex)")
-            print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
-            if bestIndex == foundAyat.first {
-                print("Similarity match found the same ayah")
-                return
+        // Return to main thread to update UI
+        await MainActor.run {
+            if let bestIndex, bestIndex > 0 {
+                print("performFallbackMatch bestIndex: \(bestIndex)")
+                print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
+                if bestIndex == currentFoundAyat.first {
+                    print("Similarity match found the same ayah")
+                    return
+                }
+                self.resetPages()
+                self.foundAyat = [bestIndex]
+                self.updateQuranText()
+                self.updateMatchedWords()
+                updatingFoundAyat = false
             }
-            self.resetPages()
-            foundAyat = [bestIndex]
-            updateQuranText()
-            updateMatchedWords()
         }
     }
 
@@ -449,6 +467,7 @@ class MuhaffezViewModel {
             voiceIndex += 1
         }
         matchedWords = results
+        print("updateMatchedWords, matchedWords = results, matchedWords: \(matchedWords)")
         previousVoiceWordsCount = voiceWords.count
         //print("matchedWords = results, voiceWord, quranWordsIndex: \(quranWordsIndex)")
     }

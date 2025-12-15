@@ -10,7 +10,9 @@ import SwiftUI
 extension MuhaffezViewModel {
 
     func updatePages() {
+        print("updatePages()")
         guard pageMatchedWordsIndex < matchedWords.count else {
+            print("pageMatchedWordsIndex < matchedWords.count, pageMatchedWordsIndex: \(pageMatchedWordsIndex), matchedWords.count: \(matchedWords.count)")
             return
         }
         tempPage.text = AttributedString()
@@ -63,10 +65,13 @@ extension MuhaffezViewModel {
             }
         }
         if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+            print("updatePages, quranModel.isRightPage")
             if leftPage.isEmpty {
+                print("updatePages, leftPage.isEmpty")
                 rightPage = tempPage
             }
         } else {
+            print("updatePages, !quranModel.isRightPage")
             leftPage = tempPage
         }
     }
