@@ -303,21 +303,21 @@ struct QuranModelTests {
         // Arrange
         let viewModel = MuhaffezViewModel()
         let quranModel = QuranModel.shared
-        
+
         // Set current page as right page so condition can trigger
         viewModel.currentPageIsRight = true
-        
+
         // Give some initial text so we can verify it gets cleared
         viewModel.rightPage.text = AttributedString("Right page text")
         viewModel.leftPage.text = AttributedString("Left page text")
-        
+
         // Act: Pick an ayahIndex whose page is left page
         let leftPageIndex = 8
         quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: leftPageIndex)
         
         let rightPageIndex = 11
         quranModel.updatePageModelsIfNeeded(viewModel: viewModel, ayahIndex: rightPageIndex)
-        
+
         // Assert: Text must be cleared
         #expect(viewModel.tempPage.textString.isEmpty)
         #expect(viewModel.tempPage.textString.isEmpty)

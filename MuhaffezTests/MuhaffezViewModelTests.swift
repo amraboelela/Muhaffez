@@ -7,6 +7,7 @@
 
 import Testing
 @testable import Muhaffez
+import Foundation
 
 @MainActor
 struct MuhaffezViewModelTests {
@@ -291,6 +292,8 @@ struct MuhaffezViewModelTests {
         viewModel.voiceText = "Some voice text"
         viewModel.voiceTextHasBesmillah = true
         viewModel.voiceTextHasA3ozoBellah = true
+        viewModel.rightPage.text = AttributedString("Right page")
+        viewModel.leftPage.text = AttributedString("Left page")
 
         // Act
         viewModel.resetData()
@@ -302,6 +305,8 @@ struct MuhaffezViewModelTests {
         #expect(viewModel.voiceText.isEmpty)
         #expect(viewModel.voiceTextHasBesmillah == false)
         #expect(viewModel.voiceTextHasA3ozoBellah == false)
+        #expect(viewModel.rightPage.textString.isEmpty)
+        #expect(viewModel.leftPage.textString.isEmpty)
     }
 
     @Test func testPeekHelperAddsTwoWordsWhenRecording() async throws {

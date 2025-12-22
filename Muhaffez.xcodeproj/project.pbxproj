@@ -30,7 +30,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				.claude/settings.local.json,
-				read_embeddings.py,
 			);
 			target = F5B728732E53CDC600E7B4AC /* Muhaffez */;
 		};

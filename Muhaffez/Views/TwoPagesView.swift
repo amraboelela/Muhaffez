@@ -1,0 +1,142 @@
+//
+//  TwoPagesView.swift
+//  Muhaffez
+//
+//  Created by Amr Aboelela on 8/24/25.
+//
+
+import SwiftUI
+
+struct TwoPagesView: View {
+    @Bindable var viewModel: MuhaffezViewModel
+    @State private var scrollToPage: String? = nil
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    if viewModel.leftPage.pageType == .left {
+                        pageView(page: viewModel.leftPage)
+                            .padding(.leading, 4)
+                            .frame(width: UIScreen.main.bounds.width)
+                            .id("LEFT")
+                    }
+                    pageView(page: viewModel.rightPage)
+                        .padding(.trailing, 4)
+                        .frame(width: UIScreen.main.bounds.width)
+                        .id("RIGHT")
+                    if viewModel.leftPage.pageType == .preLeft {
+                        pageView(page: viewModel.leftPage)
+                            .padding(.leading, 4)
+                            .frame(width: UIScreen.main.bounds.width)
+                            .id("PRE_LEFT")
+                    }
+                }
+            }
+            .onChange(of: viewModel.rightPage.text) {
+                scrollToCurrentPage(using: proxy)
+            }
+            .onChange(of: viewModel.leftPage.text) {
+                scrollToCurrentPage(using: proxy)
+            }
+            .onAppear {
+                proxy.scrollTo("RIGHT", anchor: .center)
+
+                // Use this for testing moving to page animation
+//                viewModel.currentPageIsRight = true
+//                Task {
+//                    try? await Task.sleep(for: .seconds(2))
+//                    viewModel.currentPageIsRight = false
+//                    try? await Task.sleep(for: .seconds(2))
+//                    viewModel.currentPageIsRight = true
+//                }
+
+                // Use for testing displaying surah Alfateha
+//                viewModel.voiceText = "الحَمدُ لِلَّهِ رَبِّ العالَمينَ"
+//                Task {
+//                    try? await Task.sleep(for: .seconds(0.2))
+//                    viewModel.voiceText = """
+//                      الحَمدُ لِلَّهِ رَبِّ العالَمينَ
+//                      الرَّحمٰنِ الرَّحيمِ
+//                      مالِكِ يَومِ الدّينِ
+//                      إِيّاكَ نَعبُدُ وَإِيّاكَ نَستَعينُ
+//                      اهدِنَا الصِّراطَ المُستَقيمَ
+//                      صِراطَ الَّذينَ أَنعَمتَ عَلَيهِم غَيرِ المَغضوبِ عَلَيهِم وَلَا الضّالّينَ
+//                      
+//                      -
+//                      الم ذٰلِكَ الكِتابُ لا رَيبَ فيهِ هُدًى لِلمُتَّقينَ
+//الذين يؤمنون بالغيب ويقيمون الصلاة ومما رزقناهم ينفقون
+//والذين يؤمنون بما انزل اليك وما انزل من قبلك وبالاخرة هم يوقنون
+//اولئك على هدى من ربهم واولئك هم المفلحون
+//
+//ان الذين كفروا سواء عليهم اانذرتهم ام لم تنذرهم لا يؤمنون
+//ختم الله على قلوبهم وعلى سمعهم وعلى ابصارهم غشاوة ولهم عذاب عظيم                      
+//"""
+//                }
+            }
+        }
+    }
+
+    func scrollToCurrentPage(using proxy: ScrollViewProxy) {
+        scrollToPage = viewModel.currentPageIsRight ? "RIGHT" : "LEFT"
+        withAnimation {
+            proxy.scrollTo(scrollToPage, anchor: .center)
+        }
+    }
+
+    @ViewBuilder
+    private func pageView(page: PageModel) -> some View {
+        let opacity = 0.5
+        let shadowWidth: CGFloat = 4
+
+        HStack(spacing: 4) {
+            if page.pageType != .right {
+                Rectangle()
+                    .fill(Color.gray.opacity(opacity))
+                    .frame(width: shadowWidth)
+                    .padding(.top, 10)
+            }
+            VStack(alignment: .leading) {
+                HStack {
+                    if page.pageNumber > 0 {
+                        Text("\(page.pageNumber)")
+                        Spacer()
+                        Text(page.surahName)
+                        Spacer()
+                        Text("جزء \(page.juzNumber)")
+                    } else {
+                        Text(" ")
+                    }
+                }
+                .font(.custom("KFGQPC Uthmanic Script", size: 24))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+                VStack(alignment: .leading) {
+                    if page.isFirstPage {
+                        Spacer()
+                    }
+                    Text(page.text)
+                        .lineSpacing(8)
+                        .minimumScaleFactor(0.5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .environment(\.layoutDirection, .rightToLeft)
+                        .padding(.horizontal, 8)
+                    Spacer()
+                }
+            }
+            .frame(maxHeight: .infinity)
+            if page.pageType == .right {
+                Rectangle()
+                    .fill(Color.gray.opacity(opacity))
+                    .frame(width: shadowWidth)
+                    .padding(.top, 10)
+            }
+        }
+    }
+}
+
+
+#Preview {
+    TwoPagesView(viewModel: MuhaffezViewModel())
+}
+
