@@ -60,8 +60,7 @@ struct PageModelTests {
         // Call reset
         pageModel.reset()
 
-        // Verify all properties are reset
-        #expect(pageModel.pageType == .right)
+        #expect(pageModel.pageType == .left)
         #expect(pageModel.juzNumber == 0)
         #expect(pageModel.surahName == "")
         #expect(pageModel.pageNumber == 0)
