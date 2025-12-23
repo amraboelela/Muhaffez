@@ -23,11 +23,11 @@ extension MuhaffezViewModel {
 
         func advanceLine() {
             if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
+                tempPage.pageType = .right
                 rightPage = tempPage
-                rightPage.pageType = .right
             } else {
+                tempPage.pageType = .left
                 leftPage = tempPage
-                leftPage.pageType = .left
             }
             currentLineIndex += 1
             wordsInCurrentLine = wordsForLine(quranLines, at: currentLineIndex)
@@ -68,15 +68,16 @@ extension MuhaffezViewModel {
         }
         if quranModel.isRightPage(forAyahIndex: currentLineIndex) {
             print("updatePages, quranModel.isRightPage")
-            if leftPage.isEmpty {
-                print("updatePages, leftPage.isEmpty")
+            if !tempPage.isEmpty {
+                tempPage.pageType = .right
                 rightPage = tempPage
-                rightPage.pageType = .right
             }
         } else {
             print("updatePages, !quranModel.isRightPage")
-            leftPage = tempPage
-            leftPage.pageType = .left
+            if !tempPage.isEmpty {
+                tempPage.pageType = .left
+                leftPage = tempPage
+            }
         }
     }
 

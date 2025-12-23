@@ -84,13 +84,7 @@ class MuhaffezViewModel {
     var tempPage = PageModel()
     var rightPage = PageModel()
     var leftPage = PageModel(isLeft: true)
-    var currentPageIsRight = true {
-        didSet {
-            if !oldValue && currentPageIsRight {
-                rightPage.reset()
-            }
-        }
-    }
+    var currentPageIsRight = true
     var pageCurrentLineIndex = 0
     var pageMatchedWordsIndex = 0
 
