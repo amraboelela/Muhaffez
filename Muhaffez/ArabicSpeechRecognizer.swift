@@ -13,11 +13,32 @@ class ArabicSpeechRecognizer: NSObject, ObservableObject {
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var shouldBeRecording = false
+    // Text confirmed from completed recognition sessions, preserved across auto-restarts
+    private var accumulatedText = ""
 
     @Published var voiceText: String = ""
 
     func startRecording() throws {
-        // Cancel previous task if running
+        print("startRecording")
+        shouldBeRecording = true
+        accumulatedText = ""
+        try startRecognitionSession()
+    }
+
+    func stopRecording() {
+        print("stopRecording")
+        shouldBeRecording = false
+        accumulatedText = ""
+        audioEngine.stop()
+        request?.endAudio()
+    }
+
+    // MARK: - Private
+
+    private func startRecognitionSession() throws {
+        print("startRecognitionSession, accumulatedText words: \(accumulatedText.split(separator: " ").count)")
+        // Cancel any previous task
         recognitionTask?.cancel()
         recognitionTask = nil
 
@@ -34,15 +55,42 @@ class ArabicSpeechRecognizer: NSObject, ObservableObject {
         // Start recognition
         recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self = self else { return }
-            if let result = result {
-                self.voiceText = result.bestTranscription.formattedString
-            }
+            Task { @MainActor in
+                if let result {
+                    let sessionText = result.bestTranscription.formattedString
+                    self.voiceText = self.accumulatedText.isEmpty
+                        ? sessionText
+                        : self.accumulatedText + " " + sessionText
+                }
 
-            if error != nil || (result?.isFinal ?? false) {
-                self.audioEngine.stop()
-                self.audioEngine.inputNode.removeTap(onBus: 0)
-                self.request = nil
-                self.recognitionTask = nil
+                if error != nil || (result?.isFinal ?? false) {
+                    if let error {
+                        print("recognitionTask ended with error: \(error.localizedDescription)")
+                    } else {
+                        print("recognitionTask ended with isFinal")
+                    }
+                    // Save the final text from this session before stopping
+                    if let result {
+                        let sessionText = result.bestTranscription.formattedString
+                        if !sessionText.isEmpty {
+                            self.accumulatedText = self.accumulatedText.isEmpty
+                                ? sessionText
+                                : self.accumulatedText + " " + sessionText
+                            print("accumulatedText words: \(self.accumulatedText.split(separator: " ").count)")
+                        }
+                    }
+                    self.audioEngine.stop()
+                    self.audioEngine.inputNode.removeTap(onBus: 0)
+                    self.request = nil
+                    self.recognitionTask = nil
+
+                    // Auto-restart if the user hasn't stopped recording
+                    if self.shouldBeRecording {
+                        print("Auto-restarting recognition session")
+                        try? await Task.sleep(for: .seconds(0.3))
+                        try? self.startRecognitionSession()
+                    }
+                }
             }
         }
 
@@ -55,10 +103,6 @@ class ArabicSpeechRecognizer: NSObject, ObservableObject {
 
         audioEngine.prepare()
         try audioEngine.start()
-    }
-
-    func stopRecording() {
-        audioEngine.stop()
-        request?.endAudio()
+        print("audioEngine started")
     }
 }
