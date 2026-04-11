@@ -164,10 +164,11 @@ class QuranModel {
             print("❌ File not found in bundle")
         }
 
+        let normalizedLines = lines.map { $0.normalizedArabic }
         self.quranLines = lines
-        self.normalizedQuranLines = lines.map { $0.normalizedArabic }
-        self.a3ozoBellah = normalizedQuranLines[0]
-        self.bismellah = normalizedQuranLines[1]
+        self.normalizedQuranLines = normalizedLines
+        self.a3ozoBellah = normalizedLines.count > 0 ? normalizedLines[0] : ""
+        self.bismellah = normalizedLines.count > 1 ? normalizedLines[1] : ""
         self.pageMarkers = pageMarkers
         self.rub3Markers = rub3Markers
         self.surahMarkers = surahMarkers
@@ -235,7 +236,8 @@ class QuranModel {
             if ayahIndex >= surahMarkers[i] {
                 // Return the corresponding surah name from surahs array
                 // Note: assuming surahMarkers and surahs are in sync
-                return surahs[i+1].name
+                guard i + 1 < surahs.count else { return surahs[i].name }
+                return surahs[i + 1].name
             }
         }
 
@@ -245,22 +247,6 @@ class QuranModel {
     func isRightPage(forAyahIndex index: Int) -> Bool {
         let page = pageNumber(forAyahIndex: index)
         return page % 2 == 1
-    }
-
-    func updatePages(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
-        viewModel.tempPage.juzNumber = juzNumberFor(ayahIndex: index)
-        viewModel.tempPage.surahName = surahNameFor(ayahIndex: index)
-        viewModel.tempPage.pageNumber = pageNumber(forAyahIndex: index)
-        viewModel.currentPageIsRight = isRightPage(forAyahIndex: index)
-    }
-
-    func updatePageModelsIfNeeded(viewModel: MuhaffezViewModel, ayahIndex index: Int) {
-        if viewModel.currentPageIsRight != isRightPage(forAyahIndex: index) {
-            updatePages(viewModel: viewModel, ayahIndex: index)
-            if viewModel.currentPageIsRight {
-                viewModel.leftPage.pageType = .preLeft
-            }
-        }
     }
 
     /// Helper: true if current ayah index is at the end of a rub3

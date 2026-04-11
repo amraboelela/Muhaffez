@@ -38,14 +38,14 @@ extension MuhaffezViewModel {
             tempPage.text += separator
         }
 
-        quranModel.updatePages(viewModel: self, ayahIndex: currentLineIndex)
+        applyPageInfo(for: currentLineIndex)
         for i in (matchedWordsIndex..<matchedWords.count) {
             if currentPageIsRight != quranModel.isRightPage(forAyahIndex: currentLineIndex) {
                 pageCurrentLineIndex = currentLineIndex
                 pageMatchedWordsIndex = i
                 tempPage.reset()
             }
-            quranModel.updatePageModelsIfNeeded(viewModel: self, ayahIndex: currentLineIndex)
+            updatePageIfPageChanged(for: currentLineIndex)
             if isBeginningOfAya(wordIndexInLine) {
                 if quranModel.isEndOfSurah(currentLineIndex - 1) {
                     add(separator: surahSeparator(ayaIndex: currentLineIndex))
@@ -78,6 +78,23 @@ extension MuhaffezViewModel {
                 tempPage.pageType = .left
                 leftPage = tempPage
             }
+        }
+    }
+
+    // MARK: - Page Info Helpers
+
+    private func applyPageInfo(for index: Int) {
+        tempPage.juzNumber = quranModel.juzNumberFor(ayahIndex: index)
+        tempPage.surahName = quranModel.surahNameFor(ayahIndex: index)
+        tempPage.pageNumber = quranModel.pageNumber(forAyahIndex: index)
+        currentPageIsRight = quranModel.isRightPage(forAyahIndex: index)
+    }
+
+    private func updatePageIfPageChanged(for index: Int) {
+        guard currentPageIsRight != quranModel.isRightPage(forAyahIndex: index) else { return }
+        applyPageInfo(for: index)
+        if currentPageIsRight {
+            leftPage.pageType = .preLeft
         }
     }
 

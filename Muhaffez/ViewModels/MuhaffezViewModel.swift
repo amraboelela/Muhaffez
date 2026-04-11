@@ -300,10 +300,6 @@ class MuhaffezViewModel {
     }
 
     private func performFallbackMatch() {
-//        defer {
-//            updatingFoundAyat = false
-//            print("updatingFoundAyat = false")
-//        }
         print("performFallbackMatch textToPredict: \(textToPredict)")
 
         // Use ML model for prediction
@@ -367,19 +363,18 @@ class MuhaffezViewModel {
 
         // Return to main thread to update UI
         await MainActor.run {
-            if let bestIndex, bestIndex > 0 {
-                print("performFallbackMatch bestIndex: \(bestIndex)")
-                print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
-                if bestIndex == currentFoundAyat.first {
-                    print("Similarity match found the same ayah")
-                    return
-                }
-                self.resetPages()
-                self.foundAyat = [bestIndex]
-                self.updateQuranText()
-                self.updateMatchedWords()
-                updatingFoundAyat = false
+            defer { updatingFoundAyat = false }
+            guard let bestIndex, bestIndex > 0 else { return }
+            print("performFallbackMatch bestIndex: \(bestIndex)")
+            print("performFallbackMatch bestIndex ayah: \(quranLines[bestIndex])")
+            if bestIndex == currentFoundAyat.first {
+                print("Similarity match found the same ayah")
+                return
             }
+            self.resetPages()
+            self.foundAyat = [bestIndex]
+            self.updateQuranText()
+            self.updateMatchedWords()
         }
     }
 
